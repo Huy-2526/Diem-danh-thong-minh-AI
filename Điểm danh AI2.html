@@ -3,38 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Face Pro - Data Compressed</title>
+    <title>AI ĐIỂM DANH - THCS BÌNH THÀNH</title>
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; --danger: #e74c3c; }
-        body { font-family: sans-serif; margin: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; }
-        #loading-screen { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        header { background: var(--primary); color: white; width: 100%; text-align: center; padding: 10px 0; }
-        .tabs { margin: 15px; }
-        .tab-btn { padding: 10px 20px; border: none; border-radius: 20px; background: #ddd; cursor: pointer; margin: 0 5px; font-weight: bold; }
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; --success: #27ae60; --danger: #e74c3c; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; }
+        
+        /* HEADER & LOGO */
+        header { background: var(--primary); color: white; width: 100%; padding: 10px 0; display: flex; align-items: center; justify-content: center; gap: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .logo-img { width: 50px; height: 50px; object-fit: contain; border-radius: 5px; background: white; padding: 2px; }
+        header h2 { margin: 0; font-size: 1.2rem; }
+
+        /* THANH ĐIỀU HƯỚNG TABS */
+        .tabs { margin: 15px; display: flex; gap: 10px; width: 95%; max-width: 640px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; background: #dcdde1; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .tab-btn.active { background: var(--accent); color: white; }
+
+        /* VÙNG CAMERA - TỰ CHỈNH KÍCH THƯỚC */
         .view { display: none; flex-direction: column; align-items: center; width: 100%; }
         .view.active { display: flex; }
-        #webcam-wrapper { position: relative; border: 5px solid white; border-radius: 10px; background: #000; width: 640px; height: 480px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        video, canvas { position: absolute; top: 0; left: 0; border-radius: 5px; }
-        .panel { margin-top: 15px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 600px; }
-        .list-container { margin-top: 20px; width: 100%; max-height: 200px; overflow-y: auto; text-align: left; border-top: 1px solid #ddd; padding-top: 10px; }
-        .student-item { display: flex; justify-content: space-between; padding: 5px 10px; border-bottom: 1px solid #eee; align-items: center; }
-        .btn-del { background: var(--danger); color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-        button { padding: 10px 20px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:active { transform: scale(0.95); }
+        
+        #webcam-wrapper { 
+            position: relative; 
+            width: 95%; 
+            max-width: 640px; 
+            aspect-ratio: 4/3; 
+            background: #000; 
+            border-radius: 15px; 
+            overflow: hidden; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 4px solid white;
+        }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        /* BẢNG ĐIỀU KHIỂN */
+        .panel { margin-top: 15px; width: 95%; max-width: 640px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box; }
+        .status { font-weight: bold; color: var(--primary); margin-bottom: 10px; text-align: center; }
+        
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        button { padding: 12px 20px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
+        .btn-reg { background: var(--success); white-space: nowrap; }
+        .btn-csv { background: var(--primary); width: 100%; }
+
+        /* DANH SÁCH HỌC SINH */
+        .list-container { margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; max-height: 200px; overflow-y: auto; }
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #fafafa; }
+        .btn-del { background: var(--danger); padding: 5px 10px; font-size: 0.8rem; }
+
+        /* MÀN HÌNH CHỜ */
+        #loading { position: fixed; inset: 0; background: white; z-index: 99; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <div id="loading-screen">
-        <div class="spinner"></div>
-        <p>Đang tải bộ não AI...</p>
+    <div id="loading">
+        <div class="loader"></div>
+        <p>Đang tải bộ não AI (Vui lòng đợi)...</p>
     </div>
 
-    <header><h2>AI ĐIỂM DANH</h2></header>
+    <header>
+        <img src="http://thcsbinhthanh.pgdtphongngu.edu.vn/upload/25919/20250914/ChatGPT_Image_22_32_13_13_thg_9__2025_787e6.png" class="logo-img" alt="Logo">
+        <h2>AI ĐIỂM DANH - THCS BÌNH THẠNH</h2>
+    </header>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('attendance')">ĐIỂM DANH</button>
@@ -43,24 +77,24 @@
 
     <div id="attendance-view" class="view active">
         <div id="webcam-wrapper">
-            <video id="video" width="640" height="480" autoplay muted playsinline></video>
+            <video id="video" autoplay muted playsinline></video>
         </div>
         <div class="panel">
-            <div id="status-msg" style="font-weight: bold; color: var(--primary)">Sẵn sàng...</div>
-            <button style="background:var(--primary); margin-top:10px" onclick="downloadCSV()">XUẤT CSV</button>
+            <div id="status-msg" class="status">Hệ thống sẵn sàng</div>
+            <button class="btn-csv" onclick="downloadCSV()">XUẤT BÁO CÁO (CSV)</button>
         </div>
     </div>
 
     <div id="register-view" class="view">
         <div class="panel">
-            <div style="display:flex; gap:10px; justify-content:center; margin-bottom: 20px;">
-                <input type="text" id="studentName" placeholder="Tên học sinh..." style="padding:10px; border:1px solid #ccc; border-radius:5px; flex:1">
-                <button id="regBtn" style="background:#27ae60" onclick="registerFace()">CHỤP & LƯU</button>
+            <div class="input-group">
+                <input type="text" id="studentName" placeholder="Nhập tên học sinh...">
+                <button id="regBtn" class="btn-reg" onclick="registerFace()">CHỤP & LƯU</button>
             </div>
-            
             <div class="list-container" id="studentList">
-                <strong style="display:block; margin-bottom:10px">Danh sách đã đăng ký:</strong>
-                </div>
+                <strong>Học sinh đã lưu:</strong>
+                <div id="list-items"></div>
+            </div>
         </div>
     </div>
 
@@ -70,131 +104,151 @@
         let attendanceLog = [["Tên", "Ngày", "Giờ"]];
         let isRegistering = false;
 
+        // 1. Khởi tạo AI và Camera
         async function init() {
             try {
-                const URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+                const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
                 await Promise.all([
-                    faceapi.nets.ssdMobilenetv1.loadFromUri(URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(URL)
+                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                 ]);
-                loadFromStorage();
-                const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+                
+                loadData();
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { frameRate: 15 } });
                 video.srcObject = stream;
                 video.onloadedmetadata = () => {
-                    document.getElementById('loading-screen').style.display = 'none';
-                    startRecognition();
+                    document.getElementById('loading').style.display = 'none';
+                    startDetection();
                 };
-            } catch (e) { alert("Lỗi khởi động!"); }
+            } catch (e) { alert("Không thể khởi động camera!"); }
         }
 
-        function startRecognition() {
+        // 2. Vòng lặp nhận diện (Tối ưu chống lag)
+        function startDetection() {
             const canvas = faceapi.createCanvasFromMedia(video);
             document.getElementById('webcam-wrapper').append(canvas);
-            const size = { width: 640, height: 480 };
-            faceapi.matchDimensions(canvas, size);
-
+            
             setInterval(async () => {
                 if (isRegistering || labeledFaceDescriptors.length === 0) return;
-                const detections = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceDescriptors();
-                const resized = faceapi.resizeResults(detections, size);
-                canvas.getContext('2d').clearRect(0, 0, 640, 480);
 
-                const matcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
-                resized.forEach(det => {
-                    const result = matcher.findBestMatch(det.descriptor);
-                    new faceapi.draw.DrawBox(det.detection.box, { label: result.label }).draw(canvas);
-                    if (result.label !== 'unknown') record(result.label);
-                });
+                const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+                faceapi.matchDimensions(canvas, displaySize);
+
+                // Dùng Tiny Detector với inputSize nhỏ để mượt
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+                    .withFaceLandmarks().withFaceDescriptors();
+                
+                const resized = faceapi.resizeResults(detections, displaySize);
+                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+
+                if (labeledFaceDescriptors.length > 0) {
+                    const matcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.55);
+                    resized.forEach(det => {
+                        const best = matcher.findBestMatch(det.descriptor);
+                        new faceapi.draw.DrawBox(det.detection.box, { label: best.label }).draw(canvas);
+                        if (best.label !== 'unknown') recordAttendance(best.label);
+                    });
+                }
             }, 500);
         }
 
+        // 3. Đăng ký học sinh mới
         async function registerFace() {
             const name = document.getElementById('studentName').value.trim();
-            if (!name) return alert("Nhập tên!");
+            if (!name) return alert("Vui lòng nhập tên!");
+
             isRegistering = true;
-            document.getElementById('regBtn').innerText = "ĐANG XỬ LÝ...";
-            await new Promise(r => setTimeout(r, 100));
+            const btn = document.getElementById('regBtn');
+            btn.innerText = "ĐANG XỬ LÝ...";
+            btn.disabled = true;
 
-            const det = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+            await new Promise(r => setTimeout(r, 200));
+            const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+
             if (det) {
-                // Nén: Làm tròn số descriptor để giảm dung lượng file lưu trữ
-                const compressedDescriptor = new Float32Array(Array.from(det.descriptor).map(n => parseFloat(n.toFixed(4))));
-                labeledFaceDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [compressedDescriptor]));
-                saveToStorage();
-                updateStudentList();
-                alert("Đã lưu!");
+                // Nén descriptor xuống 4 chữ số thập phân để nhẹ máy
+                const compressed = new Float32Array(Array.from(det.descriptor).map(n => parseFloat(n.toFixed(4))));
+                labeledFaceDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [compressed]));
+                saveData();
+                renderList();
+                alert("Đã lưu thành công!");
                 document.getElementById('studentName').value = "";
-            } else alert("Không thấy mặt!");
+            } else alert("Không thấy mặt rõ, hãy thử lại!");
 
-            document.getElementById('regBtn').innerText = "CHỤP & LƯU";
+            btn.disabled = false;
+            btn.innerText = "CHỤP & LƯU";
             isRegistering = false;
         }
 
-        function saveToStorage() {
+        // 4. Lưu và tải dữ liệu (LocalStorage)
+        function saveData() {
             const data = labeledFaceDescriptors.map(ld => ({
                 label: ld.label,
                 descriptors: ld.descriptors.map(d => Array.from(d))
             }));
-            localStorage.setItem('facelog_v2', JSON.stringify(data));
+            localStorage.setItem('attendance_ai_db', JSON.stringify(data));
         }
 
-        function loadFromStorage() {
-            const json = localStorage.getItem('facelog_v2');
-            if (json) {
-                const data = JSON.parse(json);
-                labeledFaceDescriptors = data.map(d => 
-                    new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(arr => new Float32Array(arr)))
-                );
-                updateStudentList();
+        function loadData() {
+            const data = localStorage.getItem('attendance_ai_db');
+            if (data) {
+                const parsed = JSON.parse(data);
+                labeledFaceDescriptors = parsed.map(d => new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(a => new Float32Array(a))));
+                renderList();
             }
         }
 
-        function updateStudentList() {
-            const container = document.getElementById('studentList');
-            const listHtml = labeledFaceDescriptors.map((ld, index) => `
-                <div class="student-item">
-                    <span>${index + 1}. ${ld.label}</span>
-                    <button class="btn-del" onclick="deleteStudent(${index})">Xóa</button>
-                </div>
-            `).join('');
-            container.innerHTML = `<strong style="display:block; margin-bottom:10px">Danh sách (${labeledFaceDescriptors.length}):</strong>` + listHtml;
-        }
-
-        function deleteStudent(index) {
-            if (confirm(`Xóa bạn ${labeledFaceDescriptors[index].label}?`)) {
-                labeledFaceDescriptors.splice(index, 1);
-                saveToStorage();
-                updateStudentList();
-            }
-        }
-
-        function record(name) {
+        // 5. Ghi nhật ký điểm danh
+        function recordAttendance(name) {
             const now = new Date();
             const date = now.toLocaleDateString('vi-VN');
             const time = now.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
             if (!attendanceLog.some(r => r[0] === name)) {
                 attendanceLog.push([name, date, time]);
                 document.getElementById('status-msg').innerText = "Vừa nhận: " + name;
+                document.getElementById('status-msg').style.color = "var(--success)";
             }
         }
 
-        function switchTab(tab) {
+        // 6. Giao diện danh sách
+        function renderList() {
+            const container = document.getElementById('list-items');
+            container.innerHTML = labeledFaceDescriptors.map((ld, i) => `
+                <div class="item">
+                    <span>${i+1}. ${ld.label}</span>
+                    <button class="btn-del" onclick="deleteStudent(${i})">Xóa</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteStudent(i) {
+            if(confirm("Xóa học sinh này?")) {
+                labeledFaceDescriptors.splice(i, 1);
+                saveData();
+                renderList();
+            }
+        }
+
+        // 7. Chuyển Tab
+        function switchTab(t) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`${tab}-view`).classList.add('active');
+            document.getElementById(t + '-view').classList.add('active');
             event.target.classList.add('active');
         }
 
+        // 8. Xuất file CSV
         function downloadCSV() {
-            let csv = "\ufeff" + attendanceLog.map(e => e.join(",")).join("\n");
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-            link.download = `DiemDanh_${new Date().toLocaleDateString('vi-VN')}.csv`;
-            link.click();
+            let csv = "\ufeff" + attendanceLog.map(r => r.join(",")).join("\n");
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `DiemDanh_${new Date().toLocaleDateString('vi-VN')}.csv`;
+            a.click();
         }
 
-        window.onload = init;
+        init();
     </script>
 </body>
 </html>
