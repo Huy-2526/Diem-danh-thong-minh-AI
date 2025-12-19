@@ -12,25 +12,25 @@
         .logo-img { width: 50px; height: 50px; object-fit: contain; border-radius: 5px; background: white; padding: 2px; }
         header h2 { margin: 0; font-size: 1.2rem; }
         .tabs { margin: 15px; display: flex; gap: 10px; width: 95%; max-width: 640px; }
-        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; background: #dcdde1; cursor: pointer; font-weight: bold; }
+        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; background: #dcdde1; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .tab-btn.active { background: var(--accent); color: white; }
         .view { display: none; flex-direction: column; align-items: center; width: 100%; }
         .view.active { display: flex; }
-        #webcam-wrapper { position: relative; width: 95%; max-width: 640px; aspect-ratio: 4/3; background: #000; border-radius: 15px; overflow: hidden; border: 4px solid white; }
+        #webcam-wrapper { position: relative; width: 95%; max-width: 640px; aspect-ratio: 4/3; background: #000; border-radius: 15px; overflow: hidden; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         video { width: 100%; height: 100%; object-fit: cover; }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .panel { margin-top: 15px; width: 95%; max-width: 640px; background: white; padding: 20px; border-radius: 15px; box-sizing: border-box; }
-        .status { font-weight: bold; color: var(--primary); margin-bottom: 10px; text-align: center; height: 20px; }
+        .status { font-weight: bold; color: var(--primary); margin-bottom: 10px; text-align: center; height: 24px; }
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
         button { padding: 12px 20px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
         .btn-reg { background: var(--success); }
-        .btn-csv { background: var(--primary); width: 100%; }
+        .btn-csv { background: var(--primary); width: 100%; margin-top: 10px; }
         .list-container { margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; max-height: 200px; overflow-y: auto; }
-        .item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #fafafa; }
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #fafafa; background: #fdfdfd; margin-bottom: 5px; border-radius: 5px; }
         .btn-del { background: var(--danger); padding: 5px 10px; font-size: 0.8rem; }
         #loading { position: fixed; inset: 0; background: white; z-index: 99; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -42,7 +42,7 @@
     </div>
 
     <header>
-        <img src="ảnh logo trường.png" class="logo-img">
+        <img src="ảnh logo trường.png" class="logo-img" onerror="this.src='https://via.placeholder.com/50?text=LOGO'">
         <h2>ĐIỂM DANH THÔNG MINH - THCS BÌNH THẠNH</h2>
     </header>
 
@@ -57,7 +57,7 @@
         </div>
         <div class="panel">
             <div id="status-msg" class="status">Đang khởi động camera...</div>
-            <button class="btn-csv" onclick="downloadCSV()">XUẤT BÁO CÁO (CSV)</button>
+            <button class="btn-csv" onclick="downloadCSV()">XUẤT BÁO CÁO (3 CỘT EXCEL)</button>
         </div>
     </div>
 
@@ -77,12 +77,12 @@
     <script>
         const video = document.getElementById('video');
         let labeledFaceDescriptors = [];
-        let attendanceLog = [["Tên", "Ngày", "Giờ"]];
+        // Khởi tạo mảng log với tiêu đề 3 cột
+        let attendanceLog = [["Tên Học Sinh", "Ngày Điểm Danh", "Giờ Ghi Nhận"]];
         let isRegistering = false;
 
         async function init() {
             try {
-                // Sử dụng link server dự phòng của Fastly/JsDelivr để load nhanh tại VN
                 const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
                 
                 await Promise.all([
@@ -97,11 +97,11 @@
                 
                 video.onloadedmetadata = () => {
                     document.getElementById('loading').style.display = 'none';
-                    document.getElementById('status-msg').innerText = "Hệ thống sẵn sàng";
+                    document.getElementById('status-msg').innerText = "Hệ thống đã sẵn sàng";
                     startDetection();
                 };
             } catch (e) {
-                document.getElementById('loading-text').innerHTML = "<span style='color:red'>Lỗi tải AI/Camera. Hãy dùng HTTPS hoặc localhost!</span>";
+                document.getElementById('loading-text').innerHTML = "<span style='color:red'>Lỗi: Hãy chạy trên HTTPS hoặc Web Server Chrome!</span>";
                 console.error(e);
             }
         }
@@ -125,8 +125,13 @@
                     const matcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
                     resized.forEach(det => {
                         const best = matcher.findBestMatch(det.descriptor);
-                        new faceapi.draw.DrawBox(det.detection.box, { label: best.toString() }).draw(canvas);
-                        if (best.label !== 'unknown') recordAttendance(best.label);
+                        let label = best.label === 'unknown' ? "Chưa rõ" : best.label;
+                        
+                        new faceapi.draw.DrawBox(det.detection.box, { label: label }).draw(canvas);
+                        
+                        if (best.label !== 'unknown') {
+                            recordAttendance(best.label);
+                        }
                     });
                 }
             }, 600);
@@ -134,7 +139,7 @@
 
         async function registerFace() {
             const name = document.getElementById('studentName').value.trim();
-            if (!name) return alert("Vui lòng nhập tên!");
+            if (!name) return alert("Vui lòng nhập tên học sinh!");
 
             isRegistering = true;
             const btn = document.getElementById('regBtn');
@@ -147,9 +152,11 @@
                 labeledFaceDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [det.descriptor]));
                 saveData();
                 renderList();
-                alert("Đã lưu thành công!");
+                alert("Đã lưu thành công khuôn mặt của: " + name);
                 document.getElementById('studentName').value = "";
-            } else alert("Không thấy khuôn mặt!");
+            } else {
+                alert("Không thấy khuôn mặt! Hãy nhìn thẳng vào camera.");
+            }
 
             btn.innerText = "CHỤP & LƯU";
             isRegistering = false;
@@ -178,26 +185,36 @@
             const now = new Date();
             const date = now.toLocaleDateString('vi-VN');
             const time = now.toLocaleTimeString('vi-VN');
+
+            // Kiểm tra trùng lặp trong ngày (Chỉ điểm danh 1 lần/ngày/người)
             if (!attendanceLog.some(r => r[0] === name && r[1] === date)) {
-                attendanceLog.push([name, date, time]);
+                attendanceLog.push([name, date, time]); // Lưu vào 3 cột riêng biệt
+                
                 const st = document.getElementById('status-msg');
-                st.innerText = "✅ Vừa nhận: " + name;
+                st.innerText = "✅ Đã ghi nhận: " + name;
                 st.style.color = "var(--success)";
+                
+                // Trả về trạng thái bình thường sau 3 giây
+                setTimeout(() => {
+                    st.innerText = "Đang quét khuôn mặt...";
+                    st.style.color = "var(--primary)";
+                }, 3000);
             }
         }
 
         function renderList() {
             const container = document.getElementById('list-items');
-            container.innerHTML = labeledFaceDescriptors.map((ld, i) => `
+            container.innerHTML = labeledFaceDescriptors.length === 0 ? "Chưa có học sinh nào." : 
+                labeledFaceDescriptors.map((ld, i) => `
                 <div class="item">
-                    <span>${i+1}. ${ld.label}</span>
+                    <span>${i+1}. <b>${ld.label}</b></span>
                     <button class="btn-del" onclick="deleteStudent(${i})">Xóa</button>
                 </div>
             `).join('');
         }
 
         function deleteStudent(i) {
-            if(confirm("Xóa học sinh này?")) {
+            if(confirm("Bạn chắc chắn muốn xóa dữ liệu học sinh này?")) {
                 labeledFaceDescriptors.splice(i, 1);
                 saveData();
                 renderList();
@@ -212,11 +229,20 @@
         }
 
         function downloadCSV() {
-            let csv = "\ufeff" + attendanceLog.map(r => r.join(",")).join("\n");
-            const blob = new Blob([csv], { type: 'text/csv' });
+            if (attendanceLog.length <= 1) return alert("Chưa có dữ liệu điểm danh!");
+
+            // Sử dụng dấu BOM \ufeff để Excel nhận diện đúng tiếng Việt UTF-8
+            let csvContent = "\ufeff"; 
+            attendanceLog.forEach(rowArray => {
+                // Nối các cột bằng dấu phẩy
+                let row = rowArray.join(",");
+                csvContent += row + "\r\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `DiemDanh_${new Date().toLocaleDateString('vi-VN')}.csv`;
+            a.download = `KetQua_DiemDanh_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.csv`;
             a.click();
         }
 
@@ -224,4 +250,3 @@
     </script>
 </body>
 </html>
-
