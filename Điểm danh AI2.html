@@ -16,12 +16,12 @@
         header { background: rgba(30, 41, 59, 0.8); width: 100%; padding: 20px 0; text-align: center; border-bottom: 2px solid var(--primary); }
         header h2 { margin: 0; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
 
-        #webcam-wrapper { position: relative; width: 90%; max-width: 640px; aspect-ratio: 4/3; margin-top: 20px; border-radius: 15px; overflow: hidden; border: 3px solid #334155; box-shadow: 0 0 30px rgba(9, 132, 227, 0.2); }
+        #webcam-wrapper { position: relative; width: 90%; max-width: 640px; aspect-ratio: 4/3; margin-top: 20px; border-radius: 15px; overflow: hidden; border: 3px solid #334155; box-shadow: 0 0 30px rgba(9, 132, 227, 0.3); }
         video { width: 100%; height: 100%; object-fit: cover; }
         canvas { position: absolute; top: 0; left: 0; }
 
-        .status-box { width: 90%; max-width: 640px; margin-top: 15px; padding: 15px; background: #1e293b; border-radius: 10px; text-align: center; border: 1px solid #334155; }
-        #status-msg { font-weight: bold; font-size: 1.1rem; }
+        .status-box { width: 90%; max-width: 640px; margin-top: 15px; padding: 15px; background: #1e293b; border-radius: 10px; text-align: center; border: 1px solid #334155; min-height: 50px; display: flex; align-items: center; justify-content: center; }
+        #status-msg { font-weight: bold; font-size: 1.1rem; transition: 0.3s; }
 
         .panel { width: 90%; max-width: 640px; margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; }
@@ -37,7 +37,7 @@
 
     <div id="loading">
         <div class="loader"></div>
-        <p>ĐANG KHỞI TẠO HỆ THỐNG AI...</p>
+        <p>ĐANG KHỞI TẠO HỆ THỐNG ĐIỂM DANH AI...</p>
     </div>
 
     <header>
@@ -50,22 +50,22 @@
     </div>
 
     <div class="status-box">
-        <div id="status-msg" style="color: var(--warning);">VUI LÒNG ĐỨNG TRƯỚC CAMERA</div>
+        <div id="status-msg" style="color: var(--warning);">ĐANG CHỜ NHẬN DIỆN...</div>
     </div>
 
     <div class="panel">
-        <button class="btn" style="background:var(--primary)" onclick="switchTab('att')">ĐIỂM DANH</button>
-        <button class="btn" style="background:#334155" onclick="switchTab('reg')">QUẢN LÝ THÀNH VIÊN</button>
+        <button class="btn" style="background:var(--primary)" onclick="switchTab('att')">CHẾ ĐỘ ĐIỂM DANH</button>
+        <button class="btn" style="background:#334155" onclick="switchTab('reg')">QUẢN LÝ DỮ LIỆU</button>
     </div>
 
     <div id="view-att" class="view active">
-        <button class="btn" style="background:var(--success); margin-top: 10px; width: 90%; max-width:640px;" onclick="downloadCSV()">XUẤT BÁO CÁO EXCEL</button>
+        <button class="btn" style="background:var(--success); margin-top: 10px; width: 90%; max-width:640px;" onclick="downloadCSV()">XUẤT BÁO CÁO (EXCEL)</button>
     </div>
 
     <div id="view-reg" class="view">
         <div class="reg-form">
-            <input type="text" id="newName" placeholder="Nhập tên học sinh...">
-            <button class="btn" style="background:var(--primary); width: 100%;" onclick="registerFace()">ĐĂNG KÝ KHUÔN MẶT</button>
+            <input type="text" id="newName" placeholder="Nhập tên học sinh mới...">
+            <button class="btn" style="background:var(--primary); width: 100%;" onclick="registerFace()">ĐĂNG KÝ MẪU MẶT</button>
             <div id="list-items" style="margin-top: 15px; max-height: 150px; overflow-y: auto; border-top: 1px solid #334155; padding-top: 10px;"></div>
         </div>
     </div>
@@ -74,10 +74,11 @@
         const video = document.getElementById('video');
         const statusMsg = document.getElementById('status-msg');
         let labeledFaceDescriptors = [];
-        let attendanceLog = [["Tên học sinh", "Ngày", "Giờ"]];
+        let attendanceLog = [["Học sinh", "Ngày", "Giờ"]];
         
+        // BIẾN TRẠNG THÁI BẢO MẬT
         let hasBlinked = false;
-        let hasTurned = false;
+        let hasMouthOpened = false;
 
         async function init() {
             const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
@@ -109,29 +110,40 @@
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 if (resized.length === 0) {
-                    hasBlinked = false; hasTurned = false;
-                    statusMsg.innerText = "CHỜ NGƯỜI DÙNG...";
-                    statusMsg.style.color = "var(--warning)";
+                    hasBlinked = false; hasMouthOpened = false;
+                    statusMsg.innerText = "MỜI ĐỨNG VÀO KHUNG HÌNH";
+                    statusMsg.style.color = "white";
                     return;
                 }
 
                 resized.forEach(det => {
                     const landmarks = det.landmarks;
                     
-                    // Kiểm tra bảo mật (Chớp mắt & Nghiêng đầu)
+                    // 1. TÍNH EAR (CHỚP MẮT)
                     const ear = (getEAR(landmarks.getLeftEye()) + getEAR(landmarks.getRightEye())) / 2;
-                    if (ear < 0.28) hasBlinked = true;
+                    if (ear < 0.26) hasBlinked = true;
 
-                    const noseX = landmarks.getNose()[0].x;
-                    const jaw = landmarks.getJawOutline();
-                    const nosePos = (noseX - jaw[0].x) / (jaw[16].x - jaw[0].x);
-                    if (nosePos < 0.45 || nosePos > 0.55) hasTurned = true;
+                    // 2. TÍNH MAR (HÁ MIỆNG)
+                    const mouth = landmarks.getMouth();
+                    const mar = getMAR(mouth);
+                    if (mar > 0.45) hasMouthOpened = true;
 
-                    if (!hasBlinked || !hasTurned) {
-                        statusMsg.innerText = "XÁC MINH SINH TRẮC HỌC (CHỚP MẮT & NGHIÊNG NHẸ)...";
+                    // HIỂN THỊ CHỈ SỐ TRÊN MẶT (Để Ban giám khảo thấy AI đang tính toán)
+                    ctx.fillStyle = "#00cec9";
+                    ctx.fillText(`EAR: ${ear.toFixed(2)}`, det.detection.box.x, det.detection.box.y - 30);
+                    ctx.fillStyle = "#f1c40f";
+                    ctx.fillText(`MAR: ${mar.toFixed(2)}`, det.detection.box.x, det.detection.box.y - 15);
+
+                    if (!hasBlinked) {
+                        statusMsg.innerText = "XÁC MINH SINH TRẮC HỌC: MỜI BẠN CHỚP MẮT";
                         statusMsg.style.color = "var(--warning)";
-                        new faceapi.draw.DrawBox(det.detection.box, { label: "Verifying...", boxColor: "red" }).draw(canvas);
+                        new faceapi.draw.DrawBox(det.detection.box, { label: "Lớp 1: Chờ chớp mắt", boxColor: "red" }).draw(canvas);
+                    } else if (!hasMouthOpened) {
+                        statusMsg.innerText = "XÁC MINH SINH TRẮC HỌC: MỜI BẠN HÁ MIỆNG";
+                        statusMsg.style.color = "var(--warning)";
+                        new faceapi.draw.DrawBox(det.detection.box, { label: "Lớp 2: Chờ há miệng", boxColor: "orange" }).draw(canvas);
                     } else {
+                        // VƯỢT QUA BẢO MẬT -> NHẬN DIỆN DANH TÍNH
                         const matcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
                         const best = matcher.findBestMatch(det.descriptor);
                         
@@ -139,12 +151,12 @@
                             statusMsg.innerHTML = `ĐÃ GHI DANH: <b style="color:var(--success)">${best.label}</b>`;
                             record(best.label);
                         } else {
-                            statusMsg.innerHTML = `<b style="color:var(--danger)">CẢNH BÁO: KHÔNG CÓ TRONG DỮ LIỆU</b>`;
+                            statusMsg.innerHTML = `<b style="color:var(--danger)">CẢNH BÁO: NGƯỜI LẠ</b>`;
                         }
                         new faceapi.draw.DrawBox(det.detection.box, { label: "XÁC THỰC THÀNH CÔNG", boxColor: "green" }).draw(canvas);
                     }
                 });
-            }, 250);
+            }, 200);
         }
 
         function getEAR(eye) {
@@ -154,16 +166,22 @@
             return (p2_p6 + p3_p5) / (2.0 * p1_p4);
         }
 
+        function getMAR(mouth) {
+            const vertical = Math.sqrt(Math.pow(mouth[14].x - mouth[18].x, 2) + Math.pow(mouth[14].y - mouth[18].y, 2));
+            const horizontal = Math.sqrt(Math.pow(mouth[12].x - mouth[16].x, 2) + Math.pow(mouth[12].y - mouth[16].y, 2));
+            return vertical / horizontal;
+        }
+
         async function registerFace() {
             const name = document.getElementById('newName').value;
-            if (!name) return alert("Vui lòng nhập tên học sinh!");
-            statusMsg.innerText = "ĐANG CHỤP MẪU KHUÔN MẶT...";
+            if (!name) return alert("Vui lòng nhập tên!");
+            statusMsg.innerText = "ĐANG QUÉT MẪU SINH TRẮC...";
             const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416 })).withFaceLandmarks().withFaceDescriptor();
             if (det) {
                 labeledFaceDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [det.descriptor]));
                 saveLocal(); render(); 
                 document.getElementById('newName').value = "";
-                alert("Đăng ký thành công!");
+                alert("Đăng ký thành công dữ liệu cho: " + name);
             }
         }
 
@@ -175,9 +193,9 @@
             }
         }
 
-        function saveLocal() { localStorage.setItem('ai_smart_checkin', JSON.stringify(labeledFaceDescriptors.map(ld => ({ label: ld.label, descriptors: ld.descriptors.map(d => Array.from(d)) })))); }
+        function saveLocal() { localStorage.setItem('khkt_smart_checkin_final', JSON.stringify(labeledFaceDescriptors.map(ld => ({ label: ld.label, descriptors: ld.descriptors.map(d => Array.from(d)) })))); }
         function loadLocal() {
-            const data = localStorage.getItem('ai_smart_checkin');
+            const data = localStorage.getItem('khkt_smart_checkin_final');
             if (data) {
                 const parsed = JSON.parse(data);
                 labeledFaceDescriptors = parsed.map(d => new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(a => new Float32Array(a))));
@@ -185,9 +203,9 @@
             }
         }
         function render() {
-            document.getElementById('list-items').innerHTML = labeledFaceDescriptors.map((ld, i) => `<div style="display:flex; justify-content:space-between; margin-bottom:8px; background:#0f172a; padding:5px; border-radius:5px;"><span>👤 ${ld.label}</span><button onclick="del(${i})" style="color:var(--danger); background:none; border:none; cursor:pointer">Xóa</button></div>`).join('');
+            document.getElementById('list-items').innerHTML = labeledFaceDescriptors.map((ld, i) => `<div style="display:flex; justify-content:space-between; margin-bottom:8px; background:#0f172a; padding:8px; border-radius:5px;"><span>👤 ${ld.label}</span><button onclick="del(${i})" style="color:var(--danger); background:none; border:none; cursor:pointer">Xóa</button></div>`).join('');
         }
-        function del(i) { if(confirm("Xóa học sinh này?")) { labeledFaceDescriptors.splice(i,1); saveLocal(); render(); } }
+        function del(i) { if(confirm("Xóa học sinh này khỏi hệ thống?")) { labeledFaceDescriptors.splice(i,1); saveLocal(); render(); } }
         function switchTab(t) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById('view-' + t).classList.add('active');
@@ -196,7 +214,7 @@
             let csv = "\ufeff" + attendanceLog.map(r => r.join(",")).join("\n");
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-            a.download = 'DanhSach_DiemDanh.csv'; a.click();
+            a.download = 'BaoCao_DiemDanh_AI.csv'; a.click();
         }
 
         init();
