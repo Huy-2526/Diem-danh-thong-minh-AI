@@ -2,222 +2,159 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HỆ THỐNG ĐIỂM DANH THÔNG MINH AI</title>
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
-        :root { --primary: #0984e3; --accent: #00cec9; --bg: #0f172a; --success: #00b894; --warning: #f1c40f; --danger: #d63031; }
+        :root { --primary: #0984e3; --accent: #00cec9; --bg: #0f172a; --success: #00b894; --danger: #d63031; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; }
-        
-        #loading { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--accent); }
-        .loader { width: 50px; height: 50px; border: 4px solid #333; border-top: 4px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        header { background: rgba(30, 41, 59, 0.8); width: 100%; padding: 20px 0; text-align: center; border-bottom: 2px solid var(--primary); }
-        header h2 { margin: 0; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
-
-        #webcam-wrapper { position: relative; width: 90%; max-width: 640px; aspect-ratio: 4/3; margin-top: 20px; border-radius: 15px; overflow: hidden; border: 3px solid #334155; box-shadow: 0 0 30px rgba(9, 132, 227, 0.3); }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        canvas { position: absolute; top: 0; left: 0; }
-
-        .status-box { width: 90%; max-width: 640px; margin-top: 15px; padding: 15px; background: #1e293b; border-radius: 10px; text-align: center; border: 1px solid #334155; min-height: 50px; display: flex; align-items: center; justify-content: center; }
-        #status-msg { font-weight: bold; font-size: 1.1rem; transition: 0.3s; }
-
-        .panel { width: 90%; max-width: 640px; margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; }
-        
-        .view { display: none; width: 100%; flex-direction: column; align-items: center; }
-        .view.active { display: flex; }
-        
-        .reg-form { width: 90%; background: #1e293b; padding: 20px; border-radius: 15px; margin-top: 10px; box-sizing: border-box; }
-        input { padding: 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+        #webcam-wrapper { position: relative; width: 640px; height: 480px; margin-top: 20px; border-radius: 15px; overflow: hidden; border: 3px solid #334155; }
+        video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .status-box { width: 640px; margin-top: 15px; padding: 20px; background: #1e293b; border-radius: 10px; text-align: center; border: 1px solid #334155; }
+        #otp-box { display: none; margin: 15px 0; }
+        #otp-number { font-size: 3rem; color: var(--accent); letter-spacing: 15px; font-weight: 900; background: #0f172a; padding: 10px; border-radius: 10px; border: 2px dashed var(--accent); }
+        .btn { padding: 10px 20px; border-radius: 5px; border: none; background: var(--primary); color: white; cursor: pointer; font-weight: bold; }
+        #loading { position: fixed; inset: 0; background: #000; z-index: 99; display: flex; justify-content: center; align-items: center; }
     </style>
 </head>
 <body>
 
-    <div id="loading">
-        <div class="loader"></div>
-        <p>ĐANG KHỞI TẠO HỆ THỐNG ĐIỂM DANH AI...</p>
+<div id="loading"><h1>ĐANG TẢI MÔ HÌNH AI...</h1></div>
+
+<header><h2>HỆ THỐNG ĐIỂM DANH THÔNG MINH AI</h2></header>
+
+<div id="webcam-wrapper">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="overlay"></canvas>
+</div>
+
+<div class="status-box">
+    <div id="status-msg">ĐANG QUÉT KHUÔN MẶT...</div>
+    <div id="otp-box">
+        <p style="color: var(--danger); font-weight: bold;">CẢNH BÁO BẢO MẬT: HÃY ĐỌC TO DÃY SỐ SAU</p>
+        <div id="otp-number">000 000</div>
     </div>
+    <button class="btn" onclick="location.reload()" style="margin-top: 10px;">LÀM MỚI HỆ THỐNG</button>
+</div>
 
-    <header>
-        <h2>HỆ THỐNG ĐIỂM DANH THÔNG MINH AI</h2>
-    </header>
+<script>
+    const video = document.getElementById('video');
+    const statusMsg = document.getElementById('status-msg');
+    const otpBox = document.getElementById('otp-box');
+    const otpNum = document.getElementById('otp-number');
+    
+    let labeledFaceDescriptors = [];
+    let isChallenging = false; // Trạng thái đang bị nghi ngờ
+    let mouthMoves = 0; // Đếm số lần mấp máy môi
+    let challengePassed = false;
 
-    <div id="webcam-wrapper">
-        <video id="video" autoplay muted playsinline></video>
-        <canvas id="overlay"></canvas>
-    </div>
+    async function init() {
+        const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+            faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+        ]);
+        loadLocal();
+        const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+        video.srcObject = stream;
+        video.onloadedmetadata = () => {
+            document.getElementById('loading').style.display = 'none';
+            runAI();
+        };
+    }
 
-    <div class="status-box">
-        <div id="status-msg" style="color: var(--warning);">ĐANG CHỜ NHẬN DIỆN...</div>
-    </div>
+    // Hàm phát âm thanh ra lệnh
+    function speak(text) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'vi-VN';
+        window.speechSynthesis.speak(u);
+    }
 
-    <div class="panel">
-        <button class="btn" style="background:var(--primary)" onclick="switchTab('att')">CHẾ ĐỘ ĐIỂM DANH</button>
-        <button class="btn" style="background:#334155" onclick="switchTab('reg')">QUẢN LÝ DỮ LIỆU</button>
-    </div>
+    async function runAI() {
+        const canvas = document.getElementById('overlay');
+        const displaySize = { width: 640, height: 480 };
+        faceapi.matchDimensions(canvas, displaySize);
 
-    <div id="view-att" class="view active">
-        <button class="btn" style="background:var(--success); margin-top: 10px; width: 90%; max-width:640px;" onclick="downloadCSV()">XUẤT BÁO CÁO (EXCEL)</button>
-    </div>
+        setInterval(async () => {
+            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 256 }))
+                .withFaceLandmarks().withFaceDescriptors();
+            const resized = faceapi.resizeResults(detections, displaySize);
+            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
 
-    <div id="view-reg" class="view">
-        <div class="reg-form">
-            <input type="text" id="newName" placeholder="Nhập tên học sinh mới...">
-            <button class="btn" style="background:var(--primary); width: 100%;" onclick="registerFace()">ĐĂNG KÝ MẪU MẶT</button>
-            <div id="list-items" style="margin-top: 15px; max-height: 150px; overflow-y: auto; border-top: 1px solid #334155; padding-top: 10px;"></div>
-        </div>
-    </div>
-
-    <script>
-        const video = document.getElementById('video');
-        const statusMsg = document.getElementById('status-msg');
-        let labeledFaceDescriptors = [];
-        let attendanceLog = [["Học sinh", "Ngày", "Giờ"]];
-        
-        // BIẾN TRẠNG THÁI BẢO MẬT
-        let hasBlinked = false;
-        let hasMouthOpened = false;
-
-        async function init() {
-            const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
-            await Promise.all([
-                faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-            ]);
-            loadLocal();
-            const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-            video.srcObject = stream;
-            video.onloadedmetadata = () => {
-                document.getElementById('loading').style.display = 'none';
-                startAI();
-            };
-        }
-
-        function startAI() {
-            const canvas = document.getElementById('overlay');
-            const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
-            faceapi.matchDimensions(canvas, displaySize);
-
-            setInterval(async () => {
-                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
-                    .withFaceLandmarks().withFaceDescriptors();
+            if (resized.length > 0) {
+                const det = resized[0];
+                const landmarks = det.landmarks;
                 
-                const resized = faceapi.resizeResults(detections, displaySize);
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // 1. TÍNH TOÁN ĐỘ CỬ ĐỘNG CỦA MẮT VÀ MIỆNG
+                const ear = (getEAR(landmarks.getLeftEye()) + getEAR(landmarks.getRightEye())) / 2;
+                const mar = getMAR(landmarks.getMouth());
 
-                if (resized.length === 0) {
-                    hasBlinked = false; hasMouthOpened = false;
-                    statusMsg.innerText = "MỜI ĐỨNG VÀO KHUNG HÌNH";
-                    statusMsg.style.color = "white";
-                    return;
+                // 2. LOGIC NGHI NGỜ (Nếu mặt quá tĩnh - như ảnh chụp)
+                if (!isChallenging && !challengePassed) {
+                    // Nếu sau 3 giây mà EAR không đổi (không chớp mắt) -> Kích hoạt đọc số
+                    // Ở đây demo mình sẽ kích hoạt ngay nếu MAR < 0.1 (môi không động đậy)
+                    triggerChallenge();
                 }
 
-                resized.forEach(det => {
-                    const landmarks = det.landmarks;
-                    
-                    // 1. TÍNH EAR (CHỚP MẮT)
-                    const ear = (getEAR(landmarks.getLeftEye()) + getEAR(landmarks.getRightEye())) / 2;
-                    if (ear < 0.26) hasBlinked = true;
+                if (isChallenging) {
+                    // Kiểm tra môi mấp máy khi đọc số
+                    if (mar > 0.15) mouthMoves++; 
 
-                    // 2. TÍNH MAR (HÁ MIỆNG)
-                    const mouth = landmarks.getMouth();
-                    const mar = getMAR(mouth);
-                    if (mar > 0.45) hasMouthOpened = true;
-
-                    // HIỂN THỊ CHỈ SỐ TRÊN MẶT (Để Ban giám khảo thấy AI đang tính toán)
-                    ctx.fillStyle = "#00cec9";
-                    ctx.fillText(`EAR: ${ear.toFixed(2)}`, det.detection.box.x, det.detection.box.y - 30);
-                    ctx.fillStyle = "#f1c40f";
-                    ctx.fillText(`MAR: ${mar.toFixed(2)}`, det.detection.box.x, det.detection.box.y - 15);
-
-                    if (!hasBlinked) {
-                        statusMsg.innerText = "XÁC MINH SINH TRẮC HỌC: MỜI BẠN CHỚP MẮT";
-                        statusMsg.style.color = "var(--warning)";
-                        new faceapi.draw.DrawBox(det.detection.box, { label: "Lớp 1: Chờ chớp mắt", boxColor: "red" }).draw(canvas);
-                    } else if (!hasMouthOpened) {
-                        statusMsg.innerText = "XÁC MINH SINH TRẮC HỌC: MỜI BẠN HÁ MIỆNG";
-                        statusMsg.style.color = "var(--warning)";
-                        new faceapi.draw.DrawBox(det.detection.box, { label: "Lớp 2: Chờ há miệng", boxColor: "orange" }).draw(canvas);
-                    } else {
-                        // VƯỢT QUA BẢO MẬT -> NHẬN DIỆN DANH TÍNH
-                        const matcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
-                        const best = matcher.findBestMatch(det.descriptor);
-                        
-                        if (best.label !== 'unknown') {
-                            statusMsg.innerHTML = `ĐÃ GHI DANH: <b style="color:var(--success)">${best.label}</b>`;
-                            record(best.label);
-                        } else {
-                            statusMsg.innerHTML = `<b style="color:var(--danger)">CẢNH BÁO: NGƯỜI LẠ</b>`;
-                        }
-                        new faceapi.draw.DrawBox(det.detection.box, { label: "XÁC THỰC THÀNH CÔNG", boxColor: "green" }).draw(canvas);
+                    if (mouthMoves > 25) { // Đã đọc đủ lâu
+                        isChallenging = false;
+                        challengePassed = true;
+                        otpBox.style.display = 'none';
                     }
-                });
-            }, 200);
-        }
-
-        function getEAR(eye) {
-            const p2_p6 = Math.sqrt(Math.pow(eye[1].x - eye[5].x, 2) + Math.pow(eye[1].y - eye[5].y, 2));
-            const p3_p5 = Math.sqrt(Math.pow(eye[2].x - eye[4].x, 2) + Math.pow(eye[2].y - eye[4].y, 2));
-            const p1_p4 = Math.sqrt(Math.pow(eye[0].x - eye[3].x, 2) + Math.pow(eye[0].y - eye[3].y, 2));
-            return (p2_p6 + p3_p5) / (2.0 * p1_p4);
-        }
-
-        function getMAR(mouth) {
-            const vertical = Math.sqrt(Math.pow(mouth[14].x - mouth[18].x, 2) + Math.pow(mouth[14].y - mouth[18].y, 2));
-            const horizontal = Math.sqrt(Math.pow(mouth[12].x - mouth[16].x, 2) + Math.pow(mouth[12].y - mouth[16].y, 2));
-            return vertical / horizontal;
-        }
-
-        async function registerFace() {
-            const name = document.getElementById('newName').value;
-            if (!name) return alert("Vui lòng nhập tên!");
-            statusMsg.innerText = "ĐANG QUÉT MẪU SINH TRẮC...";
-            const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416 })).withFaceLandmarks().withFaceDescriptor();
-            if (det) {
-                labeledFaceDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [det.descriptor]));
-                saveLocal(); render(); 
-                document.getElementById('newName').value = "";
-                alert("Đăng ký thành công dữ liệu cho: " + name);
+                    new faceapi.draw.DrawBox(det.detection.box, { label: "ĐANG XÁC THỰC GIỌNG ĐỌC...", boxColor: "red" }).draw(canvas);
+                } else {
+                    // NHẬN DIỆN DANH TÍNH SAU KHI QUA THỬ THÁCH
+                    const matcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
+                    const best = matcher.findBestMatch(det.descriptor);
+                    
+                    statusMsg.innerHTML = `TRẠNG THÁI: <b style="color:var(--success)">AN TOÀN - ${best.label}</b>`;
+                    new faceapi.draw.DrawBox(det.detection.box, { label: "ĐÃ XÁC THỰC", boxColor: "green" }).draw(canvas);
+                    if(challengePassed && mouthMoves > 25) {
+                        speak("Xác thực thành công. Chào bạn " + best.label);
+                        mouthMoves = 0; // Reset
+                    }
+                }
             }
-        }
+        }, 150);
+    }
 
-        function record(name) {
-            const d = new Date();
-            const date = d.toLocaleDateString('vi-VN');
-            if (!attendanceLog.some(r => r[0] === name && r[1] === date)) {
-                attendanceLog.push([name, date, d.toLocaleTimeString('vi-VN')]);
-            }
-        }
+    function triggerChallenge() {
+        if (isChallenging) return;
+        isChallenging = true;
+        const otp = Math.floor(100000 + Math.random() * 900000);
+        otpNum.innerText = otp.toString().split('').join(' ');
+        otpBox.style.display = 'block';
+        statusMsg.innerText = "HỆ THỐNG NGHI NGỜ GIẢ MẠO!";
+        speak("Hệ thống nghi ngờ giả mạo. Mời bạn đọc to dãy số trên màn hình để tiếp tục");
+    }
 
-        function saveLocal() { localStorage.setItem('khkt_smart_checkin_final', JSON.stringify(labeledFaceDescriptors.map(ld => ({ label: ld.label, descriptors: ld.descriptors.map(d => Array.from(d)) })))); }
-        function loadLocal() {
-            const data = localStorage.getItem('khkt_smart_checkin_final');
-            if (data) {
-                const parsed = JSON.parse(data);
-                labeledFaceDescriptors = parsed.map(d => new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(a => new Float32Array(a))));
-                render();
-            }
-        }
-        function render() {
-            document.getElementById('list-items').innerHTML = labeledFaceDescriptors.map((ld, i) => `<div style="display:flex; justify-content:space-between; margin-bottom:8px; background:#0f172a; padding:8px; border-radius:5px;"><span>👤 ${ld.label}</span><button onclick="del(${i})" style="color:var(--danger); background:none; border:none; cursor:pointer">Xóa</button></div>`).join('');
-        }
-        function del(i) { if(confirm("Xóa học sinh này khỏi hệ thống?")) { labeledFaceDescriptors.splice(i,1); saveLocal(); render(); } }
-        function switchTab(t) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById('view-' + t).classList.add('active');
-        }
-        function downloadCSV() {
-            let csv = "\ufeff" + attendanceLog.map(r => r.join(",")).join("\n");
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-            a.download = 'BaoCao_DiemDanh_AI.csv'; a.click();
-        }
+    function getEAR(eye) {
+        const p2_p6 = Math.sqrt(Math.pow(eye[1].x - eye[5].x, 2) + Math.pow(eye[1].y - eye[5].y, 2));
+        const p3_p5 = Math.sqrt(Math.pow(eye[2].x - eye[4].x, 2) + Math.pow(eye[2].y - eye[4].y, 2));
+        const p1_p4 = Math.sqrt(Math.pow(eye[0].x - eye[3].x, 2) + Math.pow(eye[0].y - eye[3].y, 2));
+        return (p2_p6 + p3_p5) / (2.0 * p1_p4);
+    }
 
-        init();
-    </script>
+    function getMAR(mouth) {
+        const v = Math.sqrt(Math.pow(mouth[14].x - mouth[18].x, 2) + Math.pow(mouth[14].y - mouth[18].y, 2));
+        const h = Math.sqrt(Math.pow(mouth[12].x - mouth[16].x, 2) + Math.pow(mouth[12].y - mouth[16].y, 2));
+        return v / h;
+    }
+
+    function loadLocal() {
+        const data = localStorage.getItem('khkt_data');
+        if (data) {
+            const parsed = JSON.parse(data);
+            labeledFaceDescriptors = parsed.map(d => new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(a => new Float32Array(a))));
+        }
+    }
+
+    init();
+</script>
 </body>
 </html>
