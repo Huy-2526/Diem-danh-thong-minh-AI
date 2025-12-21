@@ -2,41 +2,60 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ Thống Điểm Danh Thông Minh AI</title>
+    <title>Điểm danh thông minh AI</title>
     <link rel="icon" href="https://img.icons8.com/fluency/48/artificial-intelligence.png">
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
-        :root { --p: #1a2a6c; --a: #00d2ff; --s: #27ae60; --bg: #f8f9fa; }
+        :root { --p: #1a2a6c; --a: #00d2ff; --s: #27ae60; --d: #e74c3c; --bg: #f0f2f5; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; }
-        header { background: linear-gradient(135deg, #1a2a6c, #b21f1f); color: white; width: 100%; padding: 20px 0; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .container { width: 95%; max-width: 550px; margin-top: 20px; }
-        .view-box { position: relative; width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 20px; overflow: hidden; border: 4px solid white; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+        
+        header { 
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f); 
+            color: white; width: 100%; padding: 15px 0; 
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+        }
+        .logo-school { width: 50px; height: 50px; background: white; border-radius: 50%; padding: 5px; object-fit: contain; }
+
+        .container { width: 95%; max-width: 500px; margin-top: 20px; }
+        .view-box { position: relative; width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 20px; overflow: hidden; border: 4px solid white; }
         video, canvas { position: absolute; width: 100%; height: 100%; object-fit: cover; }
+        
         .laser { position: absolute; width: 100%; height: 3px; background: var(--a); box-shadow: 0 0 15px var(--a); z-index: 10; animation: scan 3s linear infinite; display: none; }
         @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
-        .panel { background: white; padding: 25px; border-radius: 20px; margin-top: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        #status { font-weight: bold; font-size: 1.2rem; text-align: center; color: var(--p); margin-bottom: 15px; }
-        .otp-display { font-size: 3.5rem; font-weight: 800; color: #b21f1f; letter-spacing: 10px; text-align: center; display: none; margin: 10px 0; }
-        .progress-bar { width: 100%; height: 10px; background: #eee; border-radius: 5px; overflow: hidden; display: none; }
+        
+        .panel { background: white; padding: 20px; border-radius: 20px; margin-top: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center; }
+        #status { font-weight: bold; font-size: 1.1rem; color: var(--p); margin-bottom: 10px; transition: 0.3s; }
+        
+        /* Hiệu ứng nhấp nháy đỏ khi không thấy mặt */
+        .no-face { color: var(--d) !important; animation: alert 0.6s infinite; }
+        @keyframes alert { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .otp-display { font-size: 3rem; font-weight: 800; color: #b21f1f; letter-spacing: 8px; display: none; margin: 10px 0; }
+        .progress-bar { width: 100%; height: 10px; background: #eee; border-radius: 5px; overflow: hidden; display: none; margin-top: 10px; }
         #progress { width: 0%; height: 100%; background: var(--s); transition: 0.2s; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
-        .tab-btn { padding: 10px 25px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; background: #ddd; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; background: #ddd; }
         .tab-btn.active { background: var(--p); color: white; }
         .hidden { display: none; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <header>
-    <h2>ĐIỂM DANH THÔNG MINH AI</h2>
-    <small>Trường THCS Bình Thạnh</small>
+    <img src="ảnh logo trường.png" class="logo-school" alt="Logo">
+    <div style="text-align: left;">
+        <h2 style="margin:0; font-size: 1.2rem;">ĐIỂM DANH THÔNG MINH AI</h2>
+        <small style="opacity: 0.8;">Hệ thống xác thực sinh trắc học</small>
+    </div>
 </header>
 
 <div class="container">
     <div class="tabs">
         <button id="tab-at" class="tab-btn active" onclick="showView('at')">ĐIỂM DANH</button>
-        <button id="tab-re" class="tab-btn" onclick="showView('re')">HỌC SINH MỚI</button>
+        <button id="tab-re" class="tab-btn" onclick="showView('re')">ĐĂNG KÝ</button>
     </div>
 
     <div id="v-at">
@@ -46,19 +65,18 @@
             <div id="laser" class="laser"></div>
         </div>
         <div class="panel">
-            <div id="status">Đang chờ gương mặt...</div>
+            <div id="status">Vui lòng đứng trước camera</div>
             <div id="otp" class="otp-display">000000</div>
             <div id="p-cont" class="progress-bar"><div id="progress"></div></div>
-            <button class="btn" style="background:var(--p)" onclick="downloadCSV()">XUẤT BÁO CÁO EXCEL</button>
+            <button class="btn" style="background:var(--p)" onclick="downloadCSV()">XUẤT FILE EXCEL</button>
         </div>
     </div>
 
     <div id="v-re" class="hidden">
         <div class="panel">
-            <h3>Đăng ký khuôn mặt</h3>
-            <input type="text" id="nameInp" placeholder="Nhập họ tên học sinh..." style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid #ddd;">
+            <input type="text" id="nameInp" placeholder="Nhập tên học sinh..." style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
             <button class="btn" style="background:var(--s)" onclick="register()">CHỤP ẢNH MẪU</button>
-            <div id="list" style="margin-top:20px; font-size: 0.9rem; color: #666;"></div>
+            <div id="list" style="margin-top:15px; text-align: left; max-height: 150px; overflow-y: auto;"></div>
         </div>
     </div>
 </div>
@@ -77,35 +95,34 @@
 
     async function init() {
         const URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
-        await Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri(URL),
-            faceapi.nets.faceLandmark68Net.loadFromUri(URL),
-            faceapi.nets.faceRecognitionNet.loadFromUri(URL)
-        ]);
-        loadData();
-        const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-        video.srcObject = stream;
-        runAI();
+        try {
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri(URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(URL)
+            ]);
+            loadData();
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+            video.srcObject = stream;
+            runAI();
+        } catch (e) { status.innerText = "LỖI CAMERA!"; }
     }
 
     function speak(txt) {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(txt);
         const voices = window.speechSynthesis.getVoices();
-        // Tìm giọng Google Tiếng Việt
         u.voice = voices.find(v => v.name.includes('Google') && v.lang.includes('vi')) || voices.find(v => v.lang.includes('vi'));
         u.lang = 'vi-VN'; u.rate = 1.0;
         window.speechSynthesis.speak(u);
     }
 
-    // Đảm bảo load giọng nói ngay khi trình duyệt sẵn sàng
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-
     async function runAI() {
         setInterval(async () => {
-            if (video.readyState !== 4 || document.getElementById('v-re').classList.contains('active')) return;
+            if (video.readyState !== 4 || !document.getElementById('v-re').classList.contains('hidden')) return;
 
-            const det = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 128 }))
+            // GIẢM scoreThreshold để AI bắt mặt nhạy hơn (0.3 thay vì 0.5)
+            const det = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.3 }))
                 .withFaceLandmarks().withFaceDescriptors();
 
             const canvas = document.getElementById('overlay');
@@ -115,25 +132,27 @@
             canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
 
             if (res.length > 0) {
+                status.classList.remove('no-face');
                 laser.style.display = 'block';
+                
                 if (!isAct && !isDone) {
-                    waitTime += 200; // Tự đếm ngầm mỗi 200ms
-                    status.innerText = "Hệ thống đang phân tích...";
+                    waitTime += 300; // Tăng dần thời gian quét ngầm
+                    status.innerText = "ĐANG PHÂN TÍCH NHÂN TRẮC HỌC...";
                     
-                    if (waitTime >= 10000) { // Đủ 10 giây
+                    if (waitTime >= 10000) { // Đủ 10 giây giữ im
                         isAct = true;
                         otp.innerText = Math.floor(100000 + Math.random() * 900000);
                         otp.style.display = 'block';
                         pCont.style.display = 'block';
-                        status.innerText = "XÁC MINH NGƯỜI THẬT";
-                        speak("Mời bạn đọc mã số trên màn hình");
+                        status.innerText = "XÁC MINH: HÃY ĐỌC MÃ SỐ";
+                        speak("Mời bạn, đọc mã số trên màn hình");
                     }
                 }
 
                 if (isAct) {
                     const mouth = res[0].landmarks.getMouth();
                     const open = Math.abs(mouth[14].y - mouth[18].y);
-                    if (open > 12) mouthMoves++;
+                    if (open > 10) mouthMoves++;
                     progress.style.width = (mouthMoves * 10) + '%';
                     if (mouthMoves >= 10) { 
                         isAct = false; isDone = true;
@@ -141,32 +160,35 @@
                     }
                 } else if (isDone) {
                     if (faceData.length > 0) {
-                        const matcher = new faceapi.FaceMatcher(faceData, 0.5);
+                        const matcher = new faceapi.FaceMatcher(faceData, 0.45); // Nới lỏng độ khớp (0.45)
                         const match = matcher.findBestMatch(res[0].descriptor);
                         if (match.label !== 'unknown') {
                             status.innerHTML = `XÁC NHẬN: <span style="color:var(--s)">${match.label}</span>`;
                             saveLog(match.label);
-                        } else { status.innerText = "KHÔNG TÌM THẤY DỮ LIỆU"; }
+                        } else { status.innerText = "KHÔNG CÓ TRONG DANH SÁCH"; }
                     }
                 }
             } else {
-                // Reset khi mất mặt
+                // RESET & BÁO LỖI NẾU KHÔNG THẤY MẶT
                 waitTime = 0; mouthMoves = 0; isAct = false; isDone = false;
                 laser.style.display = 'none'; otp.style.display = 'none';
-                pCont.style.display = 'none'; status.innerText = "Vui lòng nhìn vào camera";
+                pCont.style.display = 'none';
+                status.innerText = "KHÔNG TÌM THẤY GƯƠNG MẶT!";
+                status.classList.add('no-face');
             }
-        }, 200);
+        }, 300);
     }
 
     async function register() {
         const name = document.getElementById('nameInp').value;
-        if (!name) return alert("Vui lòng nhập tên!");
-        const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+        if (!name) return alert("Nhập tên!");
+        const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.3 })).withFaceLandmarks().withFaceDescriptor();
         if (det) {
             faceData.push(new faceapi.LabeledFaceDescriptors(name, [det.descriptor]));
-            localStorage.setItem('ai_faces', JSON.stringify(faceData.map(d => ({ label: d.label, descriptors: d.descriptors.map(desc => Array.from(desc)) }))));
-            renderList(); alert("Đã lưu khuôn mặt!");
-        } else alert("Không tìm thấy mặt!");
+            localStorage.setItem('ai_faces_v4', JSON.stringify(faceData.map(d => ({ label: d.label, descriptors: d.descriptors.map(desc => Array.from(desc)) }))));
+            renderList(); alert("Đã lưu học sinh " + name);
+            document.getElementById('nameInp').value = "";
+        } else alert("Chưa bắt được mặt, hãy nhìn thẳng vào camera!");
     }
 
     function saveLog(name) {
@@ -174,12 +196,12 @@
         const t = new Date().toLocaleTimeString('vi-VN');
         if (!log.some(r => r[0] === name && r[1] === d)) {
             log.push([name, d, t]);
-            speak("Chào bạn " + name + ". Điểm danh thành công.");
+            speak("Chào bạn " + name + ". Chúc bạn học tốt.");
         }
     }
 
     function loadData() {
-        const s = localStorage.getItem('ai_faces');
+        const s = localStorage.getItem('ai_faces_v4');
         if (s) {
             faceData = JSON.parse(s).map(d => new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc))));
             renderList();
@@ -187,7 +209,7 @@
     }
 
     function renderList() {
-        document.getElementById('list').innerHTML = "Danh sách: " + faceData.map(d => d.label).join(", ");
+        document.getElementById('list').innerHTML = "<b>Đã đăng ký:</b><br>" + faceData.map(d => "• " + d.label).join("<br>");
     }
 
     function showView(v) {
