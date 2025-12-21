@@ -162,8 +162,8 @@
                     const leftFace = jaw[0].x;
                     const rightFace = jaw[16].x;
                     
-                    if (currentChallenge === "LEFT" && (noseX - leftFace) < (rightFace - noseX) * 0.5) hasTurned = true;
-                    if (currentChallenge === "RIGHT" && (rightFace - noseX) < (noseX - leftFace) * 0.5) hasTurned = true;
+                    if (currentChallenge === "LEFT" && (noseX - leftFace) < (rightFace - noseX) * 0.7) hasTurned = true;
+                    if (currentChallenge === "RIGHT" && (rightFace - noseX) < (noseX - leftFace) * 0.7) hasTurned = true;
 
                     // Hiển thị UI thử thách
                     if (!hasBlinked) {
@@ -281,3 +281,4 @@
     </script>
 </body>
 </html>
+
