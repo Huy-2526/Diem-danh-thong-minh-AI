@@ -39,12 +39,11 @@
         header h2 { margin: 0; font-size: 1.6rem; letter-spacing: 1px; text-transform: uppercase; }
         header p { margin: 5px 0 0; opacity: 0.8; font-size: 0.9rem; }
 
-        /* FIX LỖI DÍNH CHỮ Ở ĐÂY */
         .stats-bar { display: flex; gap: 15px; margin: 20px; width: 95%; max-width: 640px; }
         .stat-card { 
             flex: 1; background: white; padding: 20px; border-radius: 15px; 
             text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border: 1px solid #eee;
-            display: flex; flex-direction: column; gap: 8px; /* Tạo khoảng cách dọc */
+            display: flex; flex-direction: column; gap: 8px;
         }
         .stat-card span { font-size: 0.85rem; color: #7f8c8d; text-transform: uppercase; font-weight: bold; }
         .stat-card b { font-size: 2rem; color: var(--primary); transition: 0.3s; }
@@ -63,7 +62,6 @@
         }
         video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
 
-        /* THỬ THÁCH MIỆNG */
         .challenge-container { margin: 15px 0; width: 100%; display: none; text-align: center; }
         #otp-display { font-size: 2.8rem; font-weight: 900; color: var(--primary); letter-spacing: 10px; margin: 10px 0; text-shadow: 2px 2px #eee; }
         .progress-bg { width: 100%; height: 12px; background: #eee; border-radius: 10px; overflow: hidden; }
@@ -110,12 +108,12 @@
         </div>
         <div class="panel">
             <div id="challenge-ui" class="challenge-container">
-                <div style="font-size: 0.9rem; color: var(--danger); font-weight: bold; text-transform: uppercase;">Đọc to dãy số để xác minh:</div>
+                <div style="font-size: 0.9rem; color: var(--danger); font-weight: bold; text-transform: uppercase;">Mã xác minh (Đọc to):</div>
                 <div id="otp-display">000 000</div>
                 <div class="progress-bg"><div id="progress-bar"></div></div>
             </div>
             <div class="status-box">
-                <span id="status-msg">Đang chờ nhận diện khuôn mặt...</span>
+                <span id="status-msg">Đang chờ nhận diện...</span>
             </div>
             <button class="btn btn-export" onclick="downloadCSV()">XUẤT BÁO CÁO HIỆN DIỆN (EXCEL)</button>
         </div>
@@ -123,7 +121,7 @@
 
     <div id="register-view" class="view">
         <div class="panel">
-            <h3 style="margin:0 0 15px 0">Đăng ký học sinh</h3>
+            <h3 style="margin:0 0 15px 0">Đăng ký học sinh mới</h3>
             <input type="text" id="studentName" placeholder="Nhập họ và tên...">
             <button class="btn btn-reg" id="reg-btn" onclick="registerFace()">CHỤP ẢNH GƯƠNG MẶT</button>
             <div id="list-items" style="margin-top: 25px; max-height: 250px; overflow-y: auto;"></div>
@@ -156,7 +154,7 @@
                     document.getElementById('loading').style.display = 'none';
                     runAI();
                 };
-            } catch (err) { alert("Lỗi camera hoặc model: " + err); }
+            } catch (err) { alert("Lỗi camera: " + err); }
         }
 
         function speak(t) {
@@ -168,6 +166,14 @@
         async function runAI() {
             const canvas = document.getElementById('overlay');
             setInterval(async () => {
+                // KIỂM TRA TAB: Nếu đang ở tab Đăng ký thì tắt xác minh
+                if (document.getElementById('register-view').classList.contains('active')) {
+                    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                    isChallenging = false; 
+                    challengeUI.style.display = 'none';
+                    return; 
+                }
+
                 const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
                 faceapi.matchDimensions(canvas, displaySize);
 
@@ -185,44 +191,42 @@
                     if (!isChallenging && !passed) {
                         isChallenging = true;
                         moves = 0;
-                        otpDisplay.innerText = Math.floor(100000 + Math.random() * 900000).toString().split('').join(' ');
+                        // OTP NGẪU NHIÊN 6 SỐ
+                        const randomOTP = Math.floor(100000 + Math.random() * 900000).toString();
+                        otpDisplay.innerText = randomOTP.split('').join(' ');
                         challengeUI.style.display = 'block';
-                        statusMsg.innerText = "Hệ thống đang kiểm tra người thật...";
-                        speak("Mời bạn đọc số");
+                        statusMsg.innerText = "Đọc mã OTP để xác thực người thật...";
+                        speak("Mời bạn đọc mã số");
                     }
 
                     if (isChallenging) {
-                        if (mar > 0.085) moves++; // ĐỘ NHẠY CHO TIẾNG VIỆT
-                        let p = (moves / 10) * 100; // Chỉ cần 10 khung hình
+                        if (mar > 0.085) moves++; 
+                        let p = (moves / 10) * 100; 
                         progressBar.style.width = Math.min(p, 100) + '%';
 
                         if (moves >= 10) {
                             isChallenging = false; passed = true;
                             challengeUI.style.display = 'none';
-                            statusMsg.innerText = "Xác thực người thật thành công. Đang đối chiếu...";
+                            statusMsg.innerText = "Xác thực thành công. Đang nhận diện...";
                         }
-                        new faceapi.draw.DrawBox(det.detection.box, { label: "ĐANG XÁC MINH...", boxColor: "#d63031" }).draw(canvas);
+                        new faceapi.draw.DrawBox(det.detection.box, { label: "XÁC MINH...", boxColor: "#d63031" }).draw(canvas);
                     } else if (passed) {
                         if (labeledFaceDescriptors.length > 0) {
                             const matcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
                             const best = matcher.findBestMatch(det.descriptor);
                             if (best.label !== 'unknown') {
-                                statusMsg.innerHTML = `XÁC NHẬN: <b style="color:var(--success)">${best.label}</b>`;
+                                statusMsg.innerHTML = `CHÀO BẠN: <b style="color:var(--success)">${best.label}</b>`;
                                 record(best.label);
                                 new faceapi.draw.DrawBox(det.detection.box, { label: best.label, boxColor: "#00b894" }).draw(canvas);
                             } else {
-                                statusMsg.innerText = "KHÔNG CÓ TRONG DỮ LIỆU!";
-                                new faceapi.draw.DrawBox(det.detection.box, { label: "NGƯỜI LẠ", boxColor: "#f39c12" }).draw(canvas);
+                                statusMsg.innerText = "NGƯỜI LẠ (KHÔNG CÓ TRONG DS)";
+                                new faceapi.draw.DrawBox(det.detection.box, { label: "Unknown", boxColor: "#f39c12" }).draw(canvas);
                             }
-                        } else {
-                            statusMsg.innerText = "CHƯA CÓ DỮ LIỆU GỐC!";
                         }
                     }
                 } else {
-                    // Tự động reset khi người dùng rời đi
                     isChallenging = false; passed = false; moves = 0;
                     challengeUI.style.display = 'none';
-                    statusMsg.innerText = "Đang chờ nhận diện...";
                 }
             }, 150);
         }
@@ -235,10 +239,9 @@
 
         async function registerFace() {
             const name = document.getElementById('studentName').value.trim();
-            if (!name) return alert("Vui lòng nhập tên học sinh!");
+            if (!name) return alert("Vui lòng nhập tên!");
             const btn = document.getElementById('reg-btn');
-            btn.innerText = "ĐANG QUÉT GƯƠNG MẶT...";
-            btn.disabled = true;
+            btn.innerText = "ĐANG QUÉT..."; btn.disabled = true;
 
             const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
                 .withFaceLandmarks().withFaceDescriptor();
@@ -246,12 +249,11 @@
             if (det) {
                 labeledFaceDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [det.descriptor]));
                 saveLocal(); render();
-                alert("Đăng ký thành công học sinh: " + name);
+                alert("Đã lưu dữ liệu: " + name);
                 document.getElementById('studentName').value = "";
-            } else alert("Không tìm thấy khuôn mặt rõ ràng. Hãy lại gần hơn!");
+            } else alert("Lỗi: Không thấy mặt!");
 
-            btn.innerText = "CHỤP ẢNH GƯƠNG MẶT";
-            btn.disabled = false;
+            btn.innerText = "CHỤP ẢNH GƯƠNG MẶT"; btn.disabled = false;
         }
 
         function record(name) {
@@ -259,15 +261,14 @@
             const time = new Date().toLocaleTimeString('vi-VN');
             if (!attendanceLog.some(r => r[0] === name && r[1] === date)) {
                 attendanceLog.push([name, date, time]);
-                speak("Chào bạn " + name);
+                speak("Điểm danh thành công " + name);
                 updateStats();
             }
         }
 
         function saveLocal() {
             const data = labeledFaceDescriptors.map(ld => ({
-                label: ld.label,
-                descriptors: ld.descriptors.map(d => Array.from(d))
+                label: ld.label, descriptors: ld.descriptors.map(d => Array.from(d))
             }));
             localStorage.setItem('khkt_v_final_binhthanh', JSON.stringify(data));
         }
@@ -283,17 +284,15 @@
 
         function render() {
             document.getElementById('count-total').innerText = labeledFaceDescriptors.length;
-            document.getElementById('list-items').innerHTML = labeledFaceDescriptors.length === 0 ? 
-                "<p style='color:#999'>Chưa có học sinh nào</p>" :
-                labeledFaceDescriptors.map((ld, i) => `
-                <div style="display:flex; justify-content:space-between; padding:12px; background:#f9f9f9; border-radius:10px; margin-bottom:5px; border:1px solid #eee">
+            document.getElementById('list-items').innerHTML = labeledFaceDescriptors.map((ld, i) => `
+                <div style="display:flex; justify-content:space-between; padding:10px; background:#f9f9f9; border-radius:10px; margin-bottom:5px; border:1px solid #eee">
                     <span>${i+1}. <b>${ld.label}</b></span>
                     <button style="color:red; border:none; background:none; cursor:pointer" onclick="del(${i})">Xóa</button>
                 </div>`).join('');
         }
 
         function del(i) {
-            if(confirm("Xóa học sinh này khỏi dữ liệu?")) { labeledFaceDescriptors.splice(i, 1); saveLocal(); render(); }
+            if(confirm("Xóa?")) { labeledFaceDescriptors.splice(i, 1); saveLocal(); render(); }
         }
 
         function updateStats() { document.getElementById('count-present').innerText = attendanceLog.length - 1; }
@@ -306,12 +305,12 @@
         }
 
         function downloadCSV() {
-            if(attendanceLog.length <= 1) return alert("Chưa có dữ liệu điểm danh!");
+            if(attendanceLog.length <= 1) return alert("Trống!");
             let csv = "\ufeff" + attendanceLog.map(r => r.join(",")).join("\n");
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.setAttribute("download", "Bao_Cao_Diem_Danh_KHKT.csv");
+            link.setAttribute("download", "DiemDanh_KHKT.csv");
             link.click();
         }
 
