@@ -2,271 +2,248 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI SMART CHECK-IN PRO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DỰ ÁN KHKT - ĐIỂM DANH AI THÔNG MINH</title>
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
         :root { 
-            --primary: #0984e3; --accent: #00cec9; --bg: #0b0e14; 
-            --success: #00b894; --warning: #f1c40f; --danger: #ff7675;
-            --glass: rgba(255, 255, 255, 0.05);
+            --primary: #0984e3; --accent: #00cec9; --bg: #f5f6fa; 
+            --success: #00b894; --danger: #d63031; --unselected: #dcdde1; 
         }
-
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0; background: var(--bg); color: white;
-            display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh; padding: 10px; box-sizing: border-box;
-            background: radial-gradient(circle at center, #1e293b 0%, #0b0e14 100%);
+        
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; color: #2f3640; overflow-x: hidden; }
+        
+        #loading { 
+            position: fixed; inset: 0; background: #1a1a1a; z-index: 9999; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: var(--accent); font-family: 'Courier New', monospace;
         }
-
-        header { width: 100%; text-align: center; padding: 20px 0; }
-        header h2 { 
-            font-size: clamp(1.2rem, 5vw, 2rem); margin: 0; 
-            background: linear-gradient(to right, var(--accent), #fff);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            text-transform: uppercase; letter-spacing: 3px; font-weight: 900;
+        .loader { 
+            width: 70px; height: 70px; border: 5px solid #333; border-top: 5px solid var(--accent); 
+            border-radius: 50%; animation: spin 1s linear infinite; box-shadow: 0 0 20px var(--accent);
+            margin-bottom: 20px;
         }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Khung Camera hiện đại */
-        #webcam-wrapper { 
-            position: relative; width: 100%; max-width: 640px; aspect-ratio: 4/3;
-            border-radius: 20px; overflow: hidden;
-            border: 2px solid rgba(0, 206, 201, 0.3);
-            box-shadow: 0 0 40px rgba(0, 206, 201, 0.15);
-            background: #000;
-        }
+        header { background: linear-gradient(135deg, #2d3436, #0984e3); color: white; width: 100%; padding: 25px 0; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        header h2 { margin: 0; font-size: 1.6rem; letter-spacing: 1px; text-transform: uppercase; }
 
-        video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .stats-bar { display: flex; gap: 15px; margin: 20px; width: 95%; max-width: 640px; }
+        .stat-card { flex: 1; background: white; padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border: 1px solid #eee; }
+        .stat-card b { font-size: 1.4rem; color: var(--primary); }
 
-        /* Hộp OTP và Status */
-        .status-box { 
-            width: 100%; max-width: 640px; margin-top: 20px;
-            padding: 20px; background: var(--glass); border-radius: 15px;
-            backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
-            text-align: center;
-        }
+        .tabs { display: flex; gap: 10px; width: 95%; max-width: 640px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 14px; border: none; border-radius: 15px; background: var(--unselected); color: #7f8c8d; cursor: pointer; font-weight: bold; transition: all 0.3s ease; opacity: 0.5; }
+        .tab-btn.active { background: var(--primary); color: white; opacity: 1; box-shadow: 0 6px 15px rgba(9, 132, 227, 0.3); }
 
-        #otp-box { display: none; margin-bottom: 10px; }
-        #otp-number { 
-            font-size: clamp(2rem, 10vw, 3.5rem); color: var(--accent); 
-            font-weight: 900; letter-spacing: 12px; margin: 10px 0;
-            text-shadow: 0 0 20px rgba(0, 206, 201, 0.5);
-        }
-
-        /* Thanh năng lượng đọc số */
-        .progress-container { width: 100%; background: rgba(255,255,255,0.1); height: 8px; border-radius: 10px; margin: 15px 0; overflow: hidden; }
-        #progress-bar { width: 0%; height: 100%; background: var(--accent); box-shadow: 0 0 10px var(--accent); transition: 0.3s; }
-
-        /* Bảng điều khiển */
-        .control-panel { width: 100%; max-width: 640px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .tab-btn { 
-            padding: 15px; border: none; border-radius: 12px; font-weight: bold; 
-            color: rgba(255,255,255,0.6); background: var(--glass); cursor: pointer; transition: 0.3s;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .tab-btn.active { color: #white; background: var(--primary); box-shadow: 0 0 20px rgba(9, 132, 227, 0.4); border-color: var(--primary); }
-
-        .view { width: 100%; max-width: 640px; display: none; flex-direction: column; margin-top: 15px; }
+        .view { display: none; flex-direction: column; align-items: center; width: 100%; }
         .view.active { display: flex; }
 
-        input { 
-            padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); 
-            background: rgba(0,0,0,0.3); color: white; margin-bottom: 10px; font-size: 1rem;
+        #webcam-wrapper { 
+            position: relative; width: 95%; max-width: 640px; aspect-ratio: 4/3; 
+            background: #000; border-radius: 25px; overflow: hidden; 
+            border: 6px solid white; box-shadow: 0 15px 35px rgba(0,0,0,0.2); 
         }
+        video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
 
-        .action-btn { 
-            padding: 15px; border: none; border-radius: 10px; cursor: pointer; 
-            font-weight: bold; color: white; background: var(--success); transition: 0.3s;
-        }
-        .action-btn:active { transform: scale(0.98); }
+        /* THANH PROGRESS CHO THỬ THÁCH MIỆNG */
+        .challenge-container { margin: 15px 0; width: 100%; display: none; }
+        #otp-display { font-size: 2.5rem; font-weight: 900; color: var(--primary); letter-spacing: 8px; margin: 5px 0; }
+        .progress-bg { width: 100%; height: 10px; background: #eee; border-radius: 5px; overflow: hidden; margin-top: 10px; }
+        #progress-bar { width: 0%; height: 100%; background: var(--success); transition: 0.2s; }
 
-        #loading { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .spinner { width: 50px; height: 50px; border: 5px solid #1e293b; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .panel { margin-top: 10px; width: 95%; max-width: 640px; background: white; padding: 20px; border-radius: 25px; box-sizing: border-box; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .status-box { padding: 15px; border-radius: 12px; background: #f8f9fa; text-align: center; border: 1px dashed #dcdde1; }
+        #status-msg { font-weight: bold; color: var(--primary); }
+
+        .btn { padding: 12px 25px; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-reg { background: var(--success); width: 100%; }
+        .btn-export { background: var(--primary); width: 100%; }
+        input { width: 100%; padding: 14px; border: 2px solid #f1f2f6; border-radius: 12px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-<div id="loading">
-    <div class="spinner"></div>
-    <p style="margin-top: 20px; letter-spacing: 2px;">ĐANG TẢI HỆ THỐNG AI...</p>
-</div>
-
-<header><h2>Diem Danh AI Smart</h2></header>
-
-<div id="webcam-wrapper">
-    <video id="video" autoplay muted playsinline></video>
-    <canvas id="overlay"></canvas>
-</div>
-
-<div class="status-box">
-    <div id="otp-box">
-        <div style="color: var(--danger); font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">Xác thực Voice-Mouth Challenge</div>
-        <div id="otp-number">000 000</div>
-        <div class="progress-container"><div id="progress-bar"></div></div>
+    <div id="loading">
+        <div class="loader"></div>
+        <div id="loading-status">Đang nạp bộ não AI...</div>
     </div>
-    <div id="status-msg" style="font-weight: 500; color: rgba(255,255,255,0.7);">ĐANG QUÉT SINH TRẮC HỌC...</div>
-</div>
 
-<div class="control-panel">
-    <button id="btn-att" class="tab-btn active" onclick="switchTab('att')">ĐIỂM DANH</button>
-    <button id="btn-reg" class="tab-btn" onclick="switchTab('reg')">CÀI ĐẶT</button>
-</div>
+    <header>
+        <h2>Hệ Thống Điểm Danh Thông Minh</h2>
+        <p>Đề tài Nghiên cứu KHKT - THCS Bình Thạnh</p>
+    </header>
 
-<div id="view-att" class="view active">
-    <button class="action-btn" style="background: var(--primary);" onclick="downloadCSV()">XUẤT DỮ LIỆU (EXCEL)</button>
-</div>
+    <div class="stats-bar">
+        <div class="stat-card"><span>Dữ liệu gốc</span><b id="count-total">0</b></div>
+        <div class="stat-card"><span>Hiện diện</span><b id="count-present" style="color:var(--success)">0</b></div>
+    </div>
 
-<div id="view-reg" class="view">
-    <input type="text" id="newName" placeholder="Nhập tên học sinh mới...">
-    <button class="action-btn" onclick="registerFace()">ĐĂNG KÝ MẪU MẶT</button>
-    <div id="list-items" style="margin-top: 15px; max-height: 120px; overflow-y: auto;"></div>
-</div>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('attendance', this)">QUÉT GƯƠNG MẶT</button>
+        <button class="tab-btn" onclick="switchTab('register', this)">QUẢN TRỊ</button>
+    </div>
 
-<script>
-    const video = document.getElementById('video');
-    const statusMsg = document.getElementById('status-msg');
-    const otpBox = document.getElementById('otp-box');
-    const otpNum = document.getElementById('otp-number');
-    const progressBar = document.getElementById('progress-bar');
-    
-    let labeledFaceDescriptors = [];
-    let attendanceLog = [["Tên", "Ngày", "Giờ"]];
-    let isChallenging = false, mouthMoves = 0, challengePassed = false, currentMode = 'att';
+    <div id="attendance-view" class="view active">
+        <div id="webcam-wrapper">
+            <video id="video" autoplay muted playsinline></video>
+            <canvas id="overlay"></canvas>
+        </div>
+        <div class="panel">
+            <div id="challenge-ui" class="challenge-container">
+                <div style="font-size: 0.8rem; color: var(--danger); font-weight: bold;">XÁC THỰC NGƯỜI THẬT: ĐỌC DÃY SỐ SAU</div>
+                <div id="otp-display">000 000</div>
+                <div class="progress-bg"><div id="progress-bar"></div></div>
+            </div>
+            <div class="status-box">
+                <span id="status-msg">Đang chờ nhận diện...</span>
+            </div>
+            <button class="btn btn-export" onclick="downloadCSV()">XUẤT BÁO CÁO (EXCEL)</button>
+        </div>
+    </div>
 
-    async function init() {
-        const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
-        await Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-            faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-        ]);
-        loadLocal();
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-        video.srcObject = stream;
-        video.onloadedmetadata = () => {
-            document.getElementById('loading').style.display = 'none';
-            runAI();
-        };
-    }
+    <div id="register-view" class="view">
+        <div class="panel">
+            <input type="text" id="studentName" placeholder="Nhập tên học sinh mới...">
+            <button class="btn btn-reg" onclick="registerFace()">ĐĂNG KÝ MẪU MẶT</button>
+            <div id="list-items" style="margin-top: 20px; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+    </div>
 
-    function speak(text) {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'vi-VN'; u.rate = 0.9;
-        window.speechSynthesis.speak(u);
-    }
+    <script>
+        const video = document.getElementById('video');
+        const statusMsg = document.getElementById('status-msg');
+        const challengeUI = document.getElementById('challenge-ui');
+        const otpDisplay = document.getElementById('otp-display');
+        const progressBar = document.getElementById('progress-bar');
+        
+        let labeledFaceDescriptors = [];
+        let attendanceLog = [["Tên", "Ngày", "Giờ"]];
+        let isChallenging = false, moves = 0, passed = false;
 
-    async function runAI() {
-        const canvas = document.getElementById('overlay');
-        setInterval(async () => {
-            if (currentMode !== 'att') {
+        async function init() {
+            const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+            ]);
+            loadLocal();
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640 } });
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+                document.getElementById('loading').style.display = 'none';
+                runAI();
+            };
+        }
+
+        function speak(t) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(t);
+            u.lang = 'vi-VN'; window.speechSynthesis.speak(u);
+        }
+
+        async function runAI() {
+            const canvas = document.getElementById('overlay');
+            setInterval(async () => {
+                const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+                faceapi.matchDimensions(canvas, displaySize);
+
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 256 }))
+                    .withFaceLandmarks().withFaceDescriptors();
+                const resized = faceapi.resizeResults(detections, displaySize);
                 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-                return;
-            }
 
-            const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
-            faceapi.matchDimensions(canvas, displaySize);
+                if (resized.length > 0) {
+                    const det = resized[0];
+                    const mar = getMAR(det.landmarks.getMouth());
 
-            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 256 }))
-                .withFaceLandmarks().withFaceDescriptors();
-            const resized = faceapi.resizeResults(detections, displaySize);
-            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-
-            if (resized.length > 0) {
-                const det = resized[0];
-                const mar = getMAR(det.landmarks.getMouth());
-
-                if (!isChallenging && !challengePassed) {
-                    isChallenging = true;
-                    const otp = Math.floor(100000 + Math.random() * 900000);
-                    otpNum.innerText = otp.toString().split('').join(' ');
-                    otpBox.style.display = 'block';
-                    speak("Mời bạn đọc dãy số trên màn hình");
-                }
-
-                if (isChallenging) {
-                    // Chỉnh MAR > 0.12 để nhạy hơn với mọi chất giọng/khẩu hình
-                    if (mar > 0.12) mouthMoves++;
-                    let progress = (mouthMoves / 25) * 100;
-                    progressBar.style.width = Math.min(progress, 100) + '%';
-
-                    if (mouthMoves > 25) {
-                        isChallenging = false; challengePassed = true;
-                        otpBox.style.display = 'none';
+                    if (!isChallenging && !passed) {
+                        isChallenging = true;
+                        moves = 0;
+                        otpDisplay.innerText = Math.floor(100000 + Math.random() * 900000).toString().split('').join(' ');
+                        challengeUI.style.display = 'block';
+                        speak("Mời bạn đọc số");
                     }
-                    new faceapi.draw.DrawBox(det.detection.box, { label: "ĐANG XÁC THỰC MIỆNG...", boxColor: "#ff7675" }).draw(canvas);
-                } else if (challengePassed) {
-                    const matcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
-                    const best = matcher.findBestMatch(det.descriptor);
-                    if (best.label !== 'unknown') {
-                        statusMsg.innerHTML = `CHÀO MỪNG: <b style="color:var(--accent)">${best.label}</b>`;
-                        record(best.label);
+
+                    if (isChallenging) {
+                        if (mar > 0.11) moves++; // Cực nhạy
+                        let p = (moves / 12) * 100; // Chỉ cần 12 khung hình mấp máy
+                        progressBar.style.width = Math.min(p, 100) + '%';
+
+                        if (moves >= 12) {
+                            isChallenging = false; passed = true;
+                            challengeUI.style.display = 'none';
+                        }
+                        new faceapi.draw.DrawBox(det.detection.box, { label: "ĐANG ĐỌC...", boxColor: "red" }).draw(canvas);
+                    } else if (passed) {
+                        const matcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.5);
+                        const best = matcher.findBestMatch(det.descriptor);
+                        if (best.label !== 'unknown') {
+                            statusMsg.innerHTML = `XÁC NHẬN: <b style="color:var(--success)">${best.label}</b>`;
+                            record(best.label);
+                        } else {
+                            statusMsg.innerText = "NGƯỜI LẠ (CHƯA ĐĂNG KÝ)";
+                        }
+                        new faceapi.draw.DrawBox(det.detection.box, { label: best.label, boxColor: "#00cec9" }).draw(canvas);
                     }
-                    new faceapi.draw.DrawBox(det.detection.box, { label: "AN TOÀN", boxColor: "#00cec9" }).draw(canvas);
+                } else {
+                    isChallenging = false; passed = false; moves = 0;
+                    challengeUI.style.display = 'none';
+                    statusMsg.innerText = "Đang chờ nhận diện...";
                 }
-            } else {
-                // Nếu không thấy mặt thì reset để người sau vào
-                challengePassed = false; isChallenging = false; mouthMoves = 0;
-                progressBar.style.width = '0%';
+            }, 200);
+        }
+
+        function getMAR(m) {
+            const v = Math.sqrt(Math.pow(m[14].x-m[18].x,2) + Math.pow(m[14].y-m[18].y,2));
+            const h = Math.sqrt(Math.pow(m[12].x-m[16].x,2) + Math.pow(m[12].y-m[16].y,2));
+            return v / h;
+        }
+
+        async function registerFace() {
+            const name = document.getElementById('studentName').value;
+            if (!name) return alert("Nhập tên!");
+            const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+            if (det) {
+                labeledFaceDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [det.descriptor]));
+                saveLocal(); render(); alert("Đã lưu!");
             }
-        }, 150);
-    }
-
-    function getMAR(mouth) {
-        const v = Math.sqrt(Math.pow(mouth[14].x - mouth[18].x, 2) + Math.pow(mouth[14].y - mouth[18].y, 2));
-        const h = Math.sqrt(Math.pow(mouth[12].x - mouth[16].x, 2) + Math.pow(mouth[12].y - mouth[16].y, 2));
-        return v / h;
-    }
-
-    async function registerFace() {
-        const name = document.getElementById('newName').value;
-        if (!name) return alert("Chưa nhập tên!");
-        const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-        if (det) {
-            labeledFaceDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [det.descriptor]));
-            saveLocal(); render(); alert("Đã lưu dữ liệu học sinh!");
         }
-    }
 
-    function switchTab(mode) {
-        currentMode = mode;
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('view-' + mode).classList.add('active');
-        document.getElementById('btn-' + mode).classList.add('active');
-    }
-
-    function record(name) {
-        const d = new Date();
-        const date = d.toLocaleDateString('vi-VN');
-        if (!attendanceLog.some(r => r[0] === name && r[1] === date)) {
-            attendanceLog.push([name, date, d.toLocaleTimeString('vi-VN')]);
-            speak("Xác thực thành công. Chào bạn " + name);
+        function record(name) {
+            const date = new Date().toLocaleDateString('vi-VN');
+            if (!attendanceLog.some(r => r[0] === name && r[1] === date)) {
+                attendanceLog.push([name, date, new Date().toLocaleTimeString('vi-VN')]);
+                speak("Chào " + name); updateStats();
+            }
         }
-    }
 
-    function saveLocal() { localStorage.setItem('ai_db_v3', JSON.stringify(labeledFaceDescriptors.map(ld => ({ label: ld.label, descriptors: ld.descriptors.map(d => Array.from(d)) })))); }
-    function loadLocal() {
-        const data = localStorage.getItem('ai_db_v3');
-        if (data) {
-            const parsed = JSON.parse(data);
-            labeledFaceDescriptors = parsed.map(d => new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(a => new Float32Array(a))));
-            render();
+        function saveLocal() { localStorage.setItem('khkt_vfinal', JSON.stringify(labeledFaceDescriptors.map(ld => ({label:ld.label, descriptors:ld.descriptors.map(d=>Array.from(d)) })))); }
+        function loadLocal() {
+            const d = localStorage.getItem('khkt_vfinal');
+            if (d) {
+                labeledFaceDescriptors = JSON.parse(d).map(x => new faceapi.LabeledFaceDescriptors(x.label, x.descriptors.map(a => new Float32Array(a))));
+                render();
+            }
         }
-    }
-    function render() {
-        document.getElementById('list-items').innerHTML = labeledFaceDescriptors.map(ld => `<div style="padding:10px; background:rgba(255,255,255,0.05); margin-bottom:5px; border-radius:8px;">👤 ${ld.label}</div>`).join('');
-    }
-    function downloadCSV() {
-        let csv = "\ufeff" + attendanceLog.map(r => r.join(",")).join("\n");
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        a.download = 'BaoCao_AI.csv'; a.click();
-    }
-
-    init();
-</script>
+        function render() {
+            document.getElementById('count-total').innerText = labeledFaceDescriptors.length;
+            document.getElementById('list-items').innerHTML = labeledFaceDescriptors.map(ld => `<div style="padding:10px; border-bottom:1px solid #eee;">👤 ${ld.label}</div>`).join('');
+        }
+        function updateStats() { document.getElementById('count-present').innerText = attendanceLog.length - 1; }
+        function switchTab(t, btn) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(t + '-view').classList.add('active');
+            btn.classList.add('active');
+        }
+        function downloadCSV() {
+            let csv = "\ufeff" + attendanceLog.map(r => r.join(",")).join("\n");
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+            a.download = 'BaoCao.csv'; a.click();
+        }
+        init();
+    </script>
 </body>
 </html>
