@@ -2,123 +2,122 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Facial Recognition - Điểm danh AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Attendance - Pro Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
-        /* GIỮ NGUYÊN CSS ĐẸP CỦA HUY */
-        :root { --primary-color: #0c2461; --accent-color: #1e90ff; --success-color: #2ecc71; --error-color: #e74c3c; --text-main: #2f3640; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f5f6fa; margin: 0; padding-bottom: 50px; color: var(--text-main); }
-        header { 
-            width: 100%; padding: 10px 20px; background: white; box-sizing: border-box;
-            display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-bottom: 3px solid var(--primary-color);
-            position: sticky; top: 0; z-index: 100;
-        }
-        .header-left { display: flex; align-items: center; gap: 10px; }
-        .school-logo { width: 40px; height: 40px; object-fit: contain; }
-        .system-title h1 { margin: 0; font-size: 1.1rem; color: var(--primary-color); }
-        .system-title p { margin: 0; font-size: 0.7rem; color: #7f8c8d; }
-
-        .main-layout { display: flex; flex-direction: row; gap: 20px; padding: 20px; max-width: 1200px; margin: 0 auto; box-sizing: border-box; }
-        .camera-section { flex: 1.2; width: 100%; }
-        .video-container { position: relative; width: 100%; border-radius: 12px; overflow: hidden; background: #000; border: 3px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        video, canvas { width: 100%; display: block; background: #000; }
-        #overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
-
-        .info-section { flex: 1; width: 100%; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        :root { --main: #1a237e; --sub: #0288d1; --bg: #f0f2f5; --card: #ffffff; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        @media (max-width: 768px) {
-            .main-layout { flex-direction: column; padding: 10px; }
-            .system-title h1 { font-size: 1rem; }
-            .card { padding: 15px; }
-            #clock { font-size: 0.8rem; }
-        }
+        /* Layout tối ưu */
+        header { background: var(--main); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10; }
+        .container { display: flex; flex: 1; overflow: hidden; gap: 10px; padding: 10px; box-sizing: border-box; }
 
-        .status-box { text-align: center; font-weight: bold; border: 2px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 15px; min-height: 40px; }
-        .tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; background: none; cursor: pointer; font-weight: bold; color: #95a5a6; }
-        .tab-btn.active { color: var(--primary-color); border-bottom: 3px solid var(--primary-color); }
-        .btn-action { width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
-        .btn-reg { background: var(--success-color); }
-        .btn-export { background: var(--primary-color); margin-top: 10px; }
-        input[type="text"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; }
-        .student-list { max-height: 200px; overflow-y: auto; margin-top: 10px; }
-        .student-item { display: flex; justify-content: space-between; padding: 10px; background: #f9f9f9; margin-bottom: 5px; border-radius: 5px; font-size: 0.9rem; border-left: 3px solid var(--accent-color); }
-        .delete-btn { color: var(--error-color); border: none; background: none; cursor: pointer; font-weight: bold; }
+        /* Vùng Camera */
+        .cam-box { flex: 1.5; position: relative; background: #000; border-radius: 15px; overflow: hidden; display: flex; align-items: center; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        /* Vùng Điều khiển */
+        .side-bar { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; min-width: 300px; }
+        .card { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        
+        /* Trạng thái */
+        .status-chip { padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; background: #e8f5e9; color: #2e7d32; font-size: 0.9rem; }
+        .status-chip.busy { background: #fff3e0; color: #ef6c00; }
+
+        /* Nút bấm & Input */
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; margin-bottom: 8px; }
+        .btn-primary { background: var(--main); color: white; }
+        .btn-link { background: #f5f5f5; color: var(--main); border: 1px solid #ddd; text-decoration: none; display: block; text-align: center; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; margin-bottom: 10px; font-size: 1rem; }
+
+        /* Danh sách học sinh */
+        .list-container { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        .item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; align-items: center; font-size: 0.9rem; }
+        
+        @media (max-width: 800px) {
+            .container { flex-direction: column; overflow-y: auto; }
+            .cam-box { flex: none; height: 350px; }
+            .side-bar { min-width: unset; }
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="header-left">
-        <img src="ảnh logo trường.png" class="school-logo" alt="Logo">
-        <div class="system-title">
-            <h1>HỆ THỐNG ĐIỂM DANH AI</h1>
-            <p>Smart Attendance System (Stable v4.2)</p>
-        </div>
-    </div>
-    <div id="clock" style="font-weight: bold; color: var(--primary-color)">00:00:00</div>
+    <div style="font-weight: bold; font-size: 1.1rem;">C15 ATTENDANCE PRO</div>
+    <div id="clock">00:00:00</div>
 </header>
 
-<div class="main-layout">
-    <section class="camera-section">
-        <div class="video-container">
-            <video id="video" autoplay muted playsinline></video>
-            <canvas id="overlay"></canvas>
-        </div>
-    </section>
+<div class="container">
+    <div class="cam-box">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="overlay"></canvas>
+    </div>
 
-    <section class="info-section">
+    <div class="side-bar">
         <div class="card">
-            <div id="status-box" class="status-box">Khởi động AI...</div>
-            <div class="tabs">
-                <button id="btn-at" class="tab-btn active" onclick="switchMode('at')">Điểm Danh</button>
-                <button id="btn-re" class="tab-btn" onclick="switchMode('re')">Đăng Ký</button>
+            <div id="status" class="status-chip">Đang khởi động hệ thống...</div>
+            
+            <div id="at-panel">
+                <button class="btn btn-primary" onclick="exportCSV()">XUẤT BÁO CÁO NGAY</button>
             </div>
-            <div id="panel-at">
-                <button class="btn-action btn-export" onclick="exportData()">Xuất Báo Cáo 3 Cột (CSV)</button>
+
+            <div id="re-panel" style="display:none">
+                <input type="text" id="nameInput" placeholder="Nhập tên chính xác...">
+                <button class="btn btn-primary" style="background:#2e7d32" onclick="register()">XÁC NHẬN CHỤP MẶT</button>
+                <div class="list-container" id="list"></div>
             </div>
-            <div id="panel-re" style="display: none;">
-                <input type="text" id="nameInput" placeholder="Nhập tên học sinh...">
-                <button id="regBtn" class="btn-action btn-reg" onclick="registerFace()">Chụp Mẫu Khuôn Mặt</button>
-                <div class="student-list" id="student-list"></div>
+
+            <div style="display:flex; gap:5px; margin-top:10px">
+                <button class="btn" style="flex:1" onclick="toggleTab('at')">ĐIỂM DANH</button>
+                <button class="btn" style="flex:1" onclick="toggleTab('re')">ĐĂNG KÝ</button>
             </div>
         </div>
-    </section>
+
+        <div class="card">
+            <h4 style="margin:0 0 10px 0; color:var(--main)">🌐 THÔNG TIN LIÊN KẾT</h4>
+            <a href="http://thcsbinhthanh.pgdtphongngu.edu.vn/" target="_blank" class="btn btn-link">TRANG CHỦ NHÀ TRƯỜNG</a>
+            <div style="margin-top:10px; font-size:0.8rem; color:#666">
+                <div>Số lượng dữ liệu: <b id="count">0</b> học sinh</div>
+                <div>Tải trọng CPU: <b id="cpu-load">Thấp</b></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
     const video = document.getElementById('video');
-    const statusBox = document.getElementById('status-box');
+    const status = document.getElementById('status');
     let labeledDescriptors = [];
-    let logs = [["Họ Tên", "Ngày", "Giờ Xuất Hiện"]]; 
-    let lastRecognizedName = "";
-    let isProcessing = false;
+    let logs = [["Tên", "Ngày", "Giờ"]];
+    let isWorking = false;
 
-    async function start() {
-        const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+    async function setup() {
+        const URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
         try {
-            await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-            await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-            await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-            loadSavedData();
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri(URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(URL)
+            ]);
+            loadData();
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, frameRate: 30 } });
             video.srcObject = stream;
             video.onloadedmetadata = () => {
-                video.play();
-                statusBox.innerText = "Sẵn sàng!";
-                requestAnimationFrame(detectFrame); // Dùng requestAnimationFrame thay cho setTimeout để mượt hơn
+                status.innerText = "HỆ THỐNG SẴN SÀNG";
+                loop();
             };
-        } catch (e) { statusBox.innerText = "Lỗi: " + e; }
+        } catch (e) { status.innerText = "LỖI: " + e; }
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN'); }, 1000);
     }
 
-    async function detectFrame() {
-        // Nếu đang ở tab đăng ký hoặc đang bận xử lý đăng ký thì tạm dừng quét điểm danh
-        if (document.getElementById('panel-re').style.display === 'block' || isProcessing) {
-            requestAnimationFrame(detectFrame);
+    async function loop() {
+        // Tối ưu: Nếu đang ở tab đăng ký hoặc máy đang bận thì giãn cách quét
+        const isRegTab = document.getElementById('re-panel').style.display === 'block';
+        if (isWorking || isRegTab) {
+            setTimeout(loop, 1000);
             return;
         }
 
@@ -126,120 +125,110 @@
         const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
         if (canvas.width !== displaySize.width) faceapi.matchDimensions(canvas, displaySize);
 
-        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+        // Sử dụng TinyFaceDetector để nhẹ máy nhất có thể
+        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 128, scoreThreshold: 0.5 }))
             .withFaceLandmarks().withFaceDescriptors();
 
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (detections.length > 0 && labeledDescriptors.length > 0) {
-            const resizedResults = faceapi.resizeResults(detections, displaySize);
+            document.getElementById('cpu-load').innerText = "Đang xử lý...";
+            const resized = faceapi.resizeResults(detections, displaySize);
             const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
-            const bestMatch = matcher.findBestMatch(resizedResults[0].descriptor);
-
-            if (bestMatch.label !== 'unknown') {
-                statusBox.innerHTML = `ĐÃ ĐIỂM DANH: <span style="color:var(--success-color)">${bestMatch.label}</span>`;
-                logAttendance(bestMatch.label);
-            } else { statusBox.innerText = "NGƯỜI LẠ"; }
-        } else { 
-            statusBox.innerText = labeledDescriptors.length > 0 ? "ĐANG TÌM MẶT..." : "CHƯA CÓ DỮ LIỆU";
-            lastRecognizedName = ""; 
-        }
-
-        // Tạo một khoảng nghỉ nhỏ để CPU "thở"
-        setTimeout(() => requestAnimationFrame(detectFrame), 100);
-    }
-
-    async function registerFace() {
-        const name = document.getElementById('nameInput').value.trim();
-        if (!name) return alert("Nhập tên!");
-        
-        isProcessing = true; // Chặn detectFrame
-        statusBox.innerText = "Đang chụp...";
-        
-        try {
-            const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 }))
-                .withFaceLandmarks().withFaceDescriptor();
-
-            if (detection) {
-                labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [detection.descriptor]));
-                saveToLocal();
-                renderStudentList();
-                document.getElementById('nameInput').value = "";
-                alert("Đã thêm: " + name);
-            } else { alert("Không thấy mặt rõ!"); }
-        } catch (e) { console.error(e); }
-        
-        isProcessing = false; // Mở lại detectFrame
-        statusBox.innerText = "Sẵn sàng!";
-    }
-
-    function logAttendance(name) {
-        const now = new Date();
-        const date = now.toLocaleDateString('vi-VN');
-        const time = now.toLocaleTimeString('vi-VN');
-        if (name !== lastRecognizedName) {
-            speak("Chào " + name);
-            lastRecognizedName = name;
-            if (!logs.some(e => e[0] === name && e[1] === date)) {
-                logs.push([name, date, time]);
+            const match = matcher.findBestMatch(resized[0].descriptor);
+            
+            if (match.label !== 'unknown') {
+                status.innerText = "XÁC NHẬN: " + match.label;
+                status.classList.remove('busy');
+                handleLog(match.label);
+            } else {
+                status.innerText = "CHƯA RÕ DANH TÍNH";
             }
+        } else {
+            document.getElementById('cpu-load').innerText = "Thấp";
+        }
+        
+        requestAnimationFrame(loop);
+    }
+
+    async function register() {
+        const name = document.getElementById('nameInput').value.trim();
+        if (!name) return alert("Huy ơi, nhập tên đã!");
+        
+        isWorking = true;
+        status.innerText = "ĐANG CHỤP MẪU...";
+        status.classList.add('busy');
+
+        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 }))
+            .withFaceLandmarks().withFaceDescriptor();
+
+        if (detection) {
+            labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [detection.descriptor]));
+            save();
+            render();
+            alert("Đã lưu: " + name);
+            // Giải phóng RAM bằng cách reload nhẹ luồng stream
+            video.pause(); await new Promise(r => setTimeout(r, 200)); video.play();
+        } else {
+            alert("Không nhận diện được mặt. Huy thử lại nhé!");
+        }
+        
+        isWorking = false;
+        status.classList.remove('busy');
+        status.innerText = "HỆ THỐNG SẴN SÀNG";
+        document.getElementById('nameInput').value = "";
+    }
+
+    function handleLog(name) {
+        const d = new Date().toLocaleDateString('vi-VN');
+        const t = new Date().toLocaleTimeString('vi-VN');
+        if (!logs.some(l => l[0] === name && l[1] === d)) {
+            logs.push([name, d, t]);
+            const speak = new SpeechSynthesisUtterance("Chào " + name);
+            speak.lang = 'vi-VN';
+            window.speechSynthesis.speak(speak);
         }
     }
 
-    function speak(text) {
-        if (window.speechSynthesis.speaking) return;
-        const msg = new SpeechSynthesisUtterance(text);
-        msg.lang = 'vi-VN';
-        window.speechSynthesis.speak(msg);
-    }
-
-    function saveToLocal() {
+    function save() {
         const data = labeledDescriptors.map(ld => ({ label: ld.label, descriptors: ld.descriptors.map(d => Array.from(d)) }));
-        localStorage.setItem('ai_data_c15', JSON.stringify(data));
+        localStorage.setItem('c15_pro_data', JSON.stringify(data));
+        document.getElementById('count').innerText = labeledDescriptors.length;
     }
 
-    function loadSavedData() {
-        const data = localStorage.getItem('ai_data_c15');
+    function loadData() {
+        const data = localStorage.getItem('c15_pro_data');
         if (data) {
             labeledDescriptors = JSON.parse(data).map(d => new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc))));
-            renderStudentList();
+            render();
+            document.getElementById('count').innerText = labeledDescriptors.length;
         }
     }
 
-    function renderStudentList() {
-        document.getElementById('student-list').innerHTML = labeledDescriptors.map((d, i) => `
-            <div class="student-item"><span>${d.label}</span><button class="delete-btn" onclick="deleteStudent(${i})">Xóa</button></div>
+    function render() {
+        document.getElementById('list').innerHTML = labeledDescriptors.map((d, i) => `
+            <div class="item"><span>${d.label}</span><button onclick="remove(${i})" style="color:red; border:none; background:none; cursor:pointer">Xóa</button></div>
         `).join('');
     }
 
-    function deleteStudent(i) {
-        if (confirm("Xóa học sinh này?")) {
-            labeledDescriptors.splice(i, 1);
-            saveToLocal();
-            renderStudentList();
-        }
+    function remove(i) { if(confirm("Xóa học sinh này?")) { labeledDescriptors.splice(i,1); save(); render(); } }
+
+    function toggleTab(tab) {
+        document.getElementById('at-panel').style.display = tab === 'at' ? 'block' : 'none';
+        document.getElementById('re-panel').style.display = tab === 're' ? 'block' : 'none';
     }
 
-    function switchMode(mode) {
-        document.getElementById('panel-at').style.display = mode === 'at' ? 'block' : 'none';
-        document.getElementById('panel-re').style.display = mode === 're' ? 'block' : 'none';
-        document.getElementById('btn-at').classList.toggle('active', mode === 'at');
-        document.getElementById('btn-re').classList.toggle('active', mode === 're');
-        const ctx = document.getElementById('overlay').getContext('2d');
-        ctx.clearRect(0, 0, 1000, 1000); // Dọn sạch canvas khi đổi tab
+    function exportCSV() {
+        let content = "\ufeff" + logs.map(e => e.join(",")).join("\n");
+        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `DiemDanh_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
     }
 
-    function exportData() {
-        let csvContent = "\ufeff" + logs.map(e => e.join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `DiemDanh_${new Date().toISOString().slice(0,10)}.csv`;
-        link.click();
-    }
-
-    start();
+    setup();
 </script>
 </body>
 </html>
