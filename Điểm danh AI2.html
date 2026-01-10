@@ -6,42 +6,147 @@
     <title>AI Attendance - Pro Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
-        :root { --main: #1a237e; --sub: #0288d1; --bg: #f0f2f5; --card: #ffffff; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        
-        /* Layout tối ưu */
-        header { background: var(--main); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10; }
-        .container { display: flex; flex: 1; overflow: hidden; gap: 10px; padding: 10px; box-sizing: border-box; }
+    :root { 
+        --primary-color: #0c2461; /* Màu xanh đậm thương hiệu của Huy */
+        --accent-color: #1e90ff; 
+        --success-color: #2ecc71; 
+        --error-color: #e74c3c; 
+        --text-main: #2f3640; 
+    }
 
-        /* Vùng Camera */
-        .cam-box { flex: 1.5; position: relative; background: #000; border-radius: 15px; overflow: hidden; display: flex; align-items: center; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    body { 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        background-color: #f5f6fa; 
+        margin: 0; 
+        color: var(--text-main);
+    }
 
-        /* Vùng Điều khiển */
-        .side-bar { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; min-width: 300px; }
-        .card { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        
-        /* Trạng thái */
-        .status-chip { padding: 8px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; background: #e8f5e9; color: #2e7d32; font-size: 0.9rem; }
-        .status-chip.busy { background: #fff3e0; color: #ef6c00; }
+    /* Header chuẩn bài */
+    header { 
+        width: 100%; 
+        padding: 12px 20px; 
+        background: white; 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        border-bottom: 3px solid var(--primary-color);
+        box-sizing: border-box;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
 
-        /* Nút bấm & Input */
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; margin-bottom: 8px; }
-        .btn-primary { background: var(--main); color: white; }
-        .btn-link { background: #f5f5f5; color: var(--main); border: 1px solid #ddd; text-decoration: none; display: block; text-align: center; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; margin-bottom: 10px; font-size: 1rem; }
+    /* Layout linh hoạt PC/Mobile */
+    .main-layout { 
+        display: flex; 
+        flex-direction: row; 
+        gap: 20px; 
+        padding: 20px; 
+        max-width: 1200px; 
+        margin: 0 auto; 
+        box-sizing: border-box; 
+    }
 
-        /* Danh sách học sinh */
-        .list-container { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
-        .item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; align-items: center; font-size: 0.9rem; }
-        
-        @media (max-width: 800px) {
-            .container { flex-direction: column; overflow-y: auto; }
-            .cam-box { flex: none; height: 350px; }
-            .side-bar { min-width: unset; }
-        }
-    </style>
+    .camera-section { flex: 1.5; min-width: 320px; }
+    
+    .video-container { 
+        position: relative; 
+        width: 100%; 
+        border-radius: 15px; 
+        overflow: hidden; 
+        background: #000; 
+        border: 4px solid white; 
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15); 
+    }
+
+    video, canvas { width: 100%; display: block; }
+    #overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+    /* Cột bên phải */
+    .info-section { flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 20px; }
+    
+    .card { 
+        background: white; 
+        padding: 20px; 
+        border-radius: 15px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+    }
+
+    .status-box { 
+        text-align: center; 
+        font-weight: bold; 
+        border: 2px solid #f1f2f6; 
+        border-radius: 10px; 
+        padding: 15px; 
+        margin-bottom: 15px; 
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fdfdfd;
+    }
+
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 2px solid #f1f2f6; margin-bottom: 15px; }
+    .tab-btn { 
+        flex: 1; 
+        padding: 12px; 
+        border: none; 
+        background: none; 
+        cursor: pointer; 
+        font-weight: bold; 
+        color: #95a5a6; 
+        transition: 0.3s;
+    }
+    .tab-btn.active { color: var(--primary-color); border-bottom: 3px solid var(--primary-color); }
+
+    /* Buttons & Inputs */
+    .btn-action { 
+        width: 100%; 
+        padding: 14px; 
+        border: none; 
+        border-radius: 10px; 
+        color: white; 
+        font-weight: bold; 
+        cursor: pointer; 
+        font-size: 0.9rem;
+        transition: 0.3s;
+    }
+    .btn-reg { background: var(--success-color); }
+    .btn-export { background: var(--primary-color); margin-top: 10px; }
+    .btn-action:active { transform: scale(0.97); }
+
+    input[type="text"] { 
+        width: 100%; 
+        padding: 12px; 
+        border: 2px solid #eee; 
+        border-radius: 10px; 
+        margin-bottom: 10px; 
+        box-sizing: border-box; 
+        font-size: 1rem;
+    }
+
+    /* Danh sách học sinh */
+    .student-list { max-height: 200px; overflow-y: auto; margin-top: 10px; border: 1px solid #f1f2f6; border-radius: 10px; }
+    .student-item { 
+        display: flex; 
+        justify-content: space-between; 
+        padding: 12px; 
+        background: #f9f9f9; 
+        border-bottom: 1px solid #eee;
+        font-size: 0.9rem; 
+    }
+    .student-item:last-child { border-bottom: none; }
+    .delete-btn { color: var(--error-color); border: none; background: none; cursor: pointer; font-weight: bold; }
+
+    /* Responsive cho Mobile của Huy */
+    @media (max-width: 768px) {
+        .main-layout { flex-direction: column; padding: 10px; }
+        .camera-section, .info-section { width: 100%; flex: none; }
+        header h1 { font-size: 0.9rem; }
+    }
+</style>
 </head>
 <body>
 
