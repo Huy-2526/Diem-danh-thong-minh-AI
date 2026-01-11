@@ -58,17 +58,32 @@
         
         /* CSS CHO NÚT TRƯỜNG MỚI */
         .btn-school { 
-        background: #0056b3; 
-        display: flex; 
-        justify-content: center; 
-        align-items: center; 
-        gap: 8px;
-        margin-top: 10px;
-        border: 2px solid #00ffff; /* Viền màu xanh neon */
-        box-shadow: 0 0 10px #1e90ff;
-        animation: blink-animation 2s infinite; /* Kích hoạt hiệu ứng nhấp nháy */
-        transition: 0.3s;
+    background: #0c2461 !important; /* Màu nền gốc */
+    color: white !important;
+    border: 2px solid #00ffff !important; 
+    box-shadow: 0 0 10px #1e90ff !important;
+    animation: blink-animation 1.5s infinite !important; /* Chỉnh 1.5s cho nháy nhanh hơn tí */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+@keyframes blink-animation {
+    0% { 
+        background-color: #0c2461; 
+        box-shadow: 0 0 5px #1e90ff; 
     }
+    50% { 
+        background-color: #007bff; /* Đổi sang xanh sáng */
+        box-shadow: 0 0 25px #00ffff, 0 0 40px #00ffff; 
+        transform: scale(1.05); /* Nở to ra 5% */
+    }
+    100% { 
+        background-color: #0c2461; 
+        box-shadow: 0 0 5px #1e90ff; 
+    }
+}
         .btn-school:hover { filter: brightness(1.1); transform: translateY(-2px); }
 
         .log-container { max-height: 300px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #eee; }
@@ -102,7 +117,7 @@
             
             <div id="at-panel">
                 <button class="btn" onclick="exportCSV()">XUẤT BÁO CÁO (CSV)</button>
-                <button class="btn btn-school" onclick="window.open('http://thcsbinhthanh.pgdtphongngu.edu.vn', '_blank')">
+                <button class="btn-school-info" onclick="window.open('http://thcsbinhthanh.pgdtphongngu.edu.vn', '_blank')">
                  VỀ TRƯỜNG
                 </button>
             </div>
