@@ -126,7 +126,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             if (labeledDescriptors.length > 0) {
-                const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
+                const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
                 resized.forEach(d => {
                     const best = matcher.findBestMatch(d.descriptor);
                     const color = best.label !== 'unknown' ? '#00ff00' : '#ff3b30';
