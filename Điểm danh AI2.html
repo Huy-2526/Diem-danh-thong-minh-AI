@@ -10,7 +10,6 @@
             --navy: #0c2461;
             --success: #00ff00;
             --danger: #ff0000;
-            --light: #f8f9fa;
         }
 
         body {
@@ -31,9 +30,7 @@
 
         .header-left { display: flex; align-items: center; gap: 15px; }
         .header-left img { height: 55px; }
-        .header-left .brand { font-weight: 800; color: var(--navy); font-size: 1.4rem; }
-
-        #clock { font-weight: bold; color: #333; font-size: 1.2rem; }
+        .header-left .brand { font-weight: 800; color: var(--navy); font-size: 1.2rem; }
 
         .main-content {
             display: flex;
@@ -102,7 +99,6 @@
             padding: 10px; border-bottom: 1px solid #f1f1f1;
             display: flex; justify-content: space-between; font-size: 0.9rem;
         }
-        .log-item b { color: var(--navy); }
     </style>
 </head>
 <body>
@@ -112,7 +108,7 @@
         <img src="ảnh logo trường.png" alt="Logo">
         <div class="brand">THCS BÌNH THẠNH - AI SYSTEM</div>
     </div>
-    <div id="clock">00:00:00</div>
+    <div id="clock" style="font-weight: bold;">00:00:00</div>
 </header>
 
 <div class="main-content">
@@ -166,7 +162,10 @@
                 faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
             ]);
             loadData();
-            const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+            // Cấu hình video mượt hơn cho iPhone
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } 
+            });
             video.srcObject = stream;
             status.innerText = "HỆ THỐNG SẴN SÀNG";
             runDetection();
@@ -211,23 +210,32 @@
                     }).draw(canvas);
                 });
             }
-        }, 150);
+        }, 400); // Tăng lên 400ms để iPhone xử lý kịp, tránh đứng hình
     }
 
     async function registerFace() {
         const name = document.getElementById('nameInput').value.trim();
-        if (!name) return alert("Bạn ơi, nhập tên đã!");
+        if (!name) return alert("Bạn ơi, nhập tên trước đã!");
+        
         isProcessing = true; 
-        status.innerText = "ĐANG QUÉT...";
+        status.innerText = "ĐANG CHỤP... ĐỪNG DI CHUYỂN";
+        
+        // Mẹo chống freeze cho iPhone: Tạm dừng và chạy lại stream
+        video.pause();
+        await new Promise(r => setTimeout(r, 300));
+        await video.play();
+
         const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+        
         if (d) {
             labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [d.descriptor]));
             saveData();
-            alert("Đã lưu: " + name);
+            alert("Đã lưu thành công cho bạn!");
             document.getElementById('nameInput').value = "";
         } else {
-            alert("Không thấy mặt!");
+            alert("Không tìm thấy mặt bạn ơi! Thử lại nhé.");
         }
+        
         isProcessing = false;
         status.innerText = "HỆ THỐNG SẴN SÀNG";
     }
@@ -248,11 +256,11 @@
             label: ld.label,
             descriptors: ld.descriptors.map(d => Array.from(d))
         }));
-        localStorage.setItem('db_silent_v4', JSON.stringify(data));
+        localStorage.setItem('db_final_v4.7', JSON.stringify(data));
     }
 
     function loadData() {
-        const data = localStorage.getItem('db_silent_v4');
+        const data = localStorage.getItem('db_final_v4.7');
         if (data) {
             labeledDescriptors = JSON.parse(data).map(d => 
                 new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc)))
@@ -272,7 +280,7 @@
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `DiemDanh_Silent.csv`;
+        link.download = `DiemDanh.csv`;
         link.click();
     }
 
