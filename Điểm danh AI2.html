@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Attendance v5.2 - THCS Bình Thạnh</title>
+    <title>AI Attendance v5.3 - THCS Bình Thạnh</title>
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
         :root { --navy: #0c2461; --green: #00ff00; --red: #ff3b30; }
@@ -21,7 +21,7 @@
         .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: 600; border-radius: 6px; font-size: 0.85rem; color: #666; }
         .tab.active { background: white; color: var(--navy); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; margin-bottom: 5px; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; margin-bottom: 5px; -webkit-tap-highlight-color: transparent; }
         .btn-red { background: var(--red); }
         .log-container { max-height: 180px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #eee; }
         .log-item { padding: 8px 0; border-bottom: 1px solid #f9f9f9; display: flex; justify-content: space-between; font-size: 0.85rem; }
@@ -33,7 +33,7 @@
 <header>
     <div class="header-left">
         <img src="ảnh logo trường.png" alt="Logo">
-        <div class="brand">THCS BÌNH THẠNH - v5.2</div>
+        <div class="brand">THCS BÌNH THẠNH - v5.3</div>
     </div>
     <div id="clock">00:00:00</div>
 </header>
@@ -57,14 +57,14 @@
             </div>
 
             <div id="re-panel" style="display:none">
-                <input type="text" id="nameInput" placeholder="Nhập tên bạn ơi..." autocomplete="off">
+                <input type="text" id="nameInput" placeholder="Nhập tên học sinh..." autocomplete="off">
                 <button class="btn" onclick="registerFace()">CHỤP ẢNH ĐĂNG KÝ</button>
                 <button class="btn btn-red" onclick="clearData()">XÓA TẤT CẢ DỮ LIỆU</button>
             </div>
         </div>
 
         <div class="card" style="margin-top:10px;">
-            <div style="font-weight: 800; color: var(--navy); font-size: 0.85rem;">NHẬT KÝ LỚP HỌC</div>
+            <div style="font-weight: 800; color: var(--navy); font-size: 0.85rem;">NHẬT KÝ ĐIỂM DANH</div>
             <div id="logList" class="log-container"></div>
         </div>
     </div>
@@ -106,7 +106,6 @@
         if (detectionInterval) clearInterval(detectionInterval);
         detectionInterval = setInterval(async () => {
             if (isProcessing) return;
-            
             const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 128 }))
                 .withFaceLandmarks().withFaceDescriptors();
             
@@ -117,13 +116,12 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             if (labeledDescriptors.length > 0) {
-                // Ngưỡng 0.45 để phân biệt người thân (ba và con)
-                const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
+                // Ngưỡng 0.52: Cân bằng giữa độ nhạy và độ chính xác
+                const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.52);
                 resized.forEach(d => {
                     const best = matcher.findBestMatch(d.descriptor);
                     const color = best.label !== 'unknown' ? '#00ff00' : '#ff3b30';
                     if (best.label !== 'unknown') addLog(best.label);
-                    
                     new faceapi.draw.DrawBox(d.detection.box, { 
                         label: best.label === 'unknown' ? 'NGƯỜI LẠ' : best.label, 
                         boxColor: color 
@@ -136,37 +134,29 @@
     async function registerFace() {
         const nameInput = document.getElementById('nameInput');
         const name = nameInput.value.trim();
-        
-        // Sửa lỗi đứng hình khi quên nhập tên
+        let hasError = false;
+
         if (!name) {
             status.innerText = "BẠN ƠI, CHƯA NHẬP TÊN KÌA!";
             status.style.background = "#ffebeb";
-            setTimeout(() => { 
-                status.innerText = "HỆ THỐNG SẴN SÀNG"; 
-                status.style.background = "";
-            }, 2000);
-            return;
+            hasError = true;
+        } else {
+            isProcessing = true;
+            clearInterval(detectionInterval); 
+            status.innerText = "ĐANG CHỤP ẢNH...";
+            try {
+                const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+                    .withFaceLandmarks().withFaceDescriptor();
+                if (d) {
+                    labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [d.descriptor]));
+                    saveData();
+                    alert("Đã lưu thành công cho bạn!");
+                    nameInput.value = "";
+                } else { alert("Không thấy mặt bạn ơi!"); }
+            } catch (e) { console.error(e); }
         }
-        
-        isProcessing = true;
-        clearInterval(detectionInterval); 
-        status.innerText = "ĐANG CHỤP ẢNH...";
 
-        try {
-            const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-                .withFaceLandmarks().withFaceDescriptor();
-            
-            if (d) {
-                labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [d.descriptor]));
-                saveData();
-                alert("Đã lưu thành công cho bạn!");
-                nameInput.value = "";
-            } else {
-                alert("Không thấy mặt bạn ơi!");
-            }
-        } catch (e) { console.error(e); }
-
-        // RESET CAMERA 0.07S
+        // RESET CAMERA VÔ ĐIỀU KIỆN 0.07S
         if (video.srcObject) {
             video.srcObject.getTracks().forEach(track => track.stop());
         }
@@ -174,8 +164,17 @@
         await startCamera();
         
         isProcessing = false;
-        status.innerText = "HỆ THỐNG SẴN SÀNG";
-        startDetectionLoop();
+        if (!hasError) {
+            status.innerText = "HỆ THỐNG SẴN SÀNG";
+            status.style.background = "";
+            startDetectionLoop();
+        } else {
+            setTimeout(() => {
+                status.innerText = "HỆ THỐNG SẴN SÀNG";
+                status.style.background = "";
+                startDetectionLoop();
+            }, 2000);
+        }
     }
 
     function addLog(name) {
@@ -192,7 +191,7 @@
         if(confirm("Bạn ơi, bạn chắc chắn muốn xóa hết dữ liệu không?")) {
             localStorage.removeItem('db_flash_v5');
             labeledDescriptors = [];
-            alert("Đã dọn dẹp xong!");
+            alert("Đã xóa xong!");
             location.reload();
         }
     }
@@ -225,7 +224,7 @@
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `DiemDanh_Lop.csv`;
+        link.download = `DiemDanh.csv`;
         link.click();
     }
 
