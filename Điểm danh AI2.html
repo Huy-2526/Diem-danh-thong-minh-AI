@@ -19,7 +19,6 @@
             background-color: #e9ecef;
         }
 
-        /* GIAO DIỆN HEADER */
         header {
             background: white;
             padding: 10px 30px;
@@ -36,7 +35,6 @@
 
         #clock { font-weight: bold; color: #333; font-size: 1.2rem; }
 
-        /* BỐ CỤC CHÍNH */
         .main-content {
             display: flex;
             max-width: 1400px;
@@ -45,7 +43,6 @@
             gap: 20px;
         }
 
-        /* KHUNG CAMERA REAL-TIME */
         .camera-container {
             flex: 1.6;
             background: #000;
@@ -62,7 +59,6 @@
             top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;
         }
 
-        /* BẢNG ĐIỀU KHIỂN */
         .control-panel { flex: 1; display: flex; flex-direction: column; gap: 15px; }
 
         .card {
@@ -94,14 +90,12 @@
             width: 100%; padding: 12px; margin-bottom: 10px;
             border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; outline: none;
         }
-        input:focus { border-color: var(--navy); }
 
         .btn {
             width: 100%; padding: 12px; border: none; border-radius: 8px;
             font-weight: 700; cursor: pointer; transition: 0.2s;
         }
         .btn-navy { background: var(--navy); color: white; }
-        .btn-navy:hover { transform: scale(1.02); opacity: 0.9; }
 
         .log-container { max-height: 220px; overflow-y: auto; margin-top: 10px; }
         .log-item {
@@ -116,7 +110,7 @@
 <header>
     <div class="header-left">
         <img src="ảnh logo trường.png" alt="Logo">
-        <div class="brand">THCS BÌNH THẠNH - AI ĐIỂM DANH THÔNG MINH</div>
+        <div class="brand">THCS BÌNH THẠNH - AI SYSTEM</div>
     </div>
     <div id="clock">00:00:00</div>
 </header>
@@ -129,7 +123,7 @@
 
     <div class="control-panel">
         <div class="card">
-            <div id="status" class="status-header">ĐANG KHỞI CHẠY AI...</div>
+            <div id="status" class="status-header">ĐANG KHỞI CHẠY...</div>
             
             <div class="tab-menu">
                 <div class="tab active" id="tab-at" onclick="switchTab('at')">ĐIỂM DANH</div>
@@ -141,13 +135,13 @@
             </div>
 
             <div id="re-panel" style="display:none">
-                <input type="text" id="nameInput" placeholder="Nhập họ tên học sinh...">
+                <input type="text" id="nameInput" placeholder="Nhập tên học sinh...">
                 <button class="btn btn-navy" onclick="registerFace()">CHỤP ẢNH ĐĂNG KÝ</button>
             </div>
         </div>
 
         <div class="card">
-            <div style="font-weight: 800; color: var(--navy); margin-bottom: 10px; border-bottom: 1px solid #eee;">LỊCH SỬ NHẬN DIỆN</div>
+            <div style="font-weight: 800; color: var(--navy); margin-bottom: 10px;">LỊCH SỬ</div>
             <div id="logList" class="log-container">
                 <div style="color: #ccc; text-align: center; padding: 10px;">Chưa có dữ liệu</div>
             </div>
@@ -171,16 +165,13 @@
                 faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                 faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
             ]);
-            
             loadData();
             const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
             video.srcObject = stream;
-            
             status.innerText = "HỆ THỐNG SẴN SÀNG";
             runDetection();
         } catch (e) {
-            status.innerText = "LỖI TẢI AI!";
-            console.error(e);
+            status.innerText = "LỖI AI!";
         }
     }
 
@@ -188,7 +179,6 @@
         setInterval(async () => {
             if (isProcessing) return; 
 
-            // Nhận diện khuôn mặt
             const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
                 .withFaceLandmarks().withFaceDescriptors();
             
@@ -196,7 +186,6 @@
             faceapi.matchDimensions(canvas, displaySize);
             const resizedDetections = faceapi.resizeResults(detections, displaySize);
             
-            // Xóa khung cũ
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
@@ -206,18 +195,15 @@
                 resizedDetections.forEach(d => {
                     const bestMatch = matcher.findBestMatch(d.descriptor);
                     const box = d.detection.box;
-                    
-                    // Cấu hình khung vẽ
                     let label = "NGƯỜI LẠ";
                     let color = "red";
                     
                     if (bestMatch.label !== 'unknown') {
                         label = bestMatch.label;
-                        color = "#00ff00"; // Màu xanh lá cho người quen
+                        color = "#00ff00";
                         addLog(label);
                     }
 
-                    // Vẽ khung bao quanh mặt
                     new faceapi.draw.DrawBox(box, { 
                         label: label, 
                         boxColor: color,
@@ -225,28 +211,23 @@
                     }).draw(canvas);
                 });
             }
-        }, 100); // Quét siêu nhanh 0.1s/lần
+        }, 150);
     }
 
     async function registerFace() {
         const name = document.getElementById('nameInput').value.trim();
-        if (!name) return alert("Huy ơi, chưa nhập tên!");
-        
+        if (!name) return alert("Bạn ơi, nhập tên đã!");
         isProcessing = true; 
-        status.innerText = "ĐANG CHỤP ẢNH...";
-        
-        const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-            .withFaceLandmarks().withFaceDescriptor();
-        
+        status.innerText = "ĐANG QUÉT...";
+        const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
         if (d) {
             labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [d.descriptor]));
             saveData();
-            alert("Đăng ký thành công: " + name);
+            alert("Đã lưu: " + name);
             document.getElementById('nameInput').value = "";
         } else {
-            alert("Không tìm thấy khuôn mặt!");
+            alert("Không thấy mặt!");
         }
-        
         isProcessing = false;
         status.innerText = "HỆ THỐNG SẴN SÀNG";
     }
@@ -259,11 +240,6 @@
             const list = document.getElementById('logList');
             if (logs.length === 2) list.innerHTML = "";
             list.innerHTML = `<div class="log-item"><b>${name}</b> <span>${time}</span></div>` + list.innerHTML;
-            
-            // Phát âm thanh chào
-            const speech = new SpeechSynthesisUtterance("Chào " + name);
-            speech.lang = 'vi-VN';
-            window.speechSynthesis.speak(speech);
         }
     }
 
@@ -272,11 +248,11 @@
             label: ld.label,
             descriptors: ld.descriptors.map(d => Array.from(d))
         }));
-        localStorage.setItem('db_binhthanh_v4.5', JSON.stringify(data));
+        localStorage.setItem('db_silent_v4', JSON.stringify(data));
     }
 
     function loadData() {
-        const data = localStorage.getItem('db_binhthanh_v4.5');
+        const data = localStorage.getItem('db_silent_v4');
         if (data) {
             labeledDescriptors = JSON.parse(data).map(d => 
                 new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc)))
@@ -296,7 +272,7 @@
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `DiemDanh_THCS_BinhThanh.csv`;
+        link.download = `DiemDanh_Silent.csv`;
         link.click();
     }
 
