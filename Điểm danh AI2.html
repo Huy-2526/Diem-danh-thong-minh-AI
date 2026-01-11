@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Attendance System - THCS Bình Thạnh</title>
+    <title>AI Attendance - THCS Bình Thạnh</title>
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
         :root {
@@ -15,40 +15,46 @@
         body {
             margin: 0;
             font-family: 'Segoe UI', Arial, sans-serif;
-            background-color: #e9ecef;
+            background-color: #f0f2f5;
+            overflow-x: hidden;
         }
 
         header {
             background: white;
-            padding: 10px 30px;
+            padding: 10px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 4px solid var(--navy);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        .header-left { display: flex; align-items: center; gap: 15px; }
-        .header-left img { height: 55px; }
-        .header-left .brand { font-weight: 800; color: var(--navy); font-size: 1.2rem; }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .header-left img { height: 45px; }
+        .header-left .brand { font-weight: 800; color: var(--navy); font-size: 1.1rem; }
 
         .main-content {
             display: flex;
-            max-width: 1400px;
-            margin: 20px auto;
-            padding: 0 20px;
-            gap: 20px;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 15px auto;
+            padding: 0 15px;
+            gap: 15px;
+        }
+
+        @media (min-width: 900px) {
+            .main-content { flex-direction: row; }
         }
 
         .camera-container {
-            flex: 1.6;
+            flex: 1.5;
             background: #000;
-            border-radius: 15px;
+            border-radius: 12px;
             position: relative;
-            aspect-ratio: 16 / 9;
+            aspect-ratio: 4 / 3; /* Tỉ lệ này nhẹ hơn 16:9 cho AI */
             overflow: hidden;
-            border: 5px solid white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 4px solid white;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
         }
 
         video, canvas {
@@ -61,31 +67,31 @@
         .card {
             background: white;
             border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
         .status-header {
-            background: #f1f3f5;
-            padding: 12px;
+            background: #f8f9fa;
+            padding: 10px;
             border-radius: 8px;
             text-align: center;
             font-weight: 800;
             color: var(--navy);
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             border-left: 5px solid var(--navy);
         }
 
-        .tab-menu { display: flex; margin-bottom: 15px; background: #eee; border-radius: 8px; padding: 5px; }
+        .tab-menu { display: flex; margin-bottom: 12px; background: #eee; border-radius: 8px; padding: 4px; }
         .tab {
             flex: 1; padding: 8px; text-align: center; cursor: pointer;
-            font-weight: 600; border-radius: 5px; transition: 0.3s;
+            font-weight: 600; border-radius: 6px; font-size: 0.9rem;
         }
-        .tab.active { background: white; color: var(--navy); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tab.active { background: white; color: var(--navy); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
         input {
             width: 100%; padding: 12px; margin-bottom: 10px;
-            border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; outline: none;
+            border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; outline: none; font-size: 16px; /* Chống auto-zoom trên iPhone */
         }
 
         .btn {
@@ -94,10 +100,10 @@
         }
         .btn-navy { background: var(--navy); color: white; }
 
-        .log-container { max-height: 220px; overflow-y: auto; margin-top: 10px; }
+        .log-container { max-height: 200px; overflow-y: auto; }
         .log-item {
-            padding: 10px; border-bottom: 1px solid #f1f1f1;
-            display: flex; justify-content: space-between; font-size: 0.9rem;
+            padding: 8px; border-bottom: 1px solid #f1f1f1;
+            display: flex; justify-content: space-between; font-size: 0.85rem;
         }
     </style>
 </head>
@@ -106,9 +112,9 @@
 <header>
     <div class="header-left">
         <img src="ảnh logo trường.png" alt="Logo">
-        <div class="brand">THCS BÌNH THẠNH - AI SYSTEM</div>
+        <div class="brand">THCS BÌNH THẠNH - AI v4.8</div>
     </div>
-    <div id="clock" style="font-weight: bold;">00:00:00</div>
+    <div id="clock" style="font-weight: bold; font-size: 0.9rem;">00:00:00</div>
 </header>
 
 <div class="main-content">
@@ -119,7 +125,7 @@
 
     <div class="control-panel">
         <div class="card">
-            <div id="status" class="status-header">ĐANG KHỞI CHẠY...</div>
+            <div id="status" class="status-header">ĐANG TẢI AI...</div>
             
             <div class="tab-menu">
                 <div class="tab active" id="tab-at" onclick="switchTab('at')">ĐIỂM DANH</div>
@@ -127,7 +133,7 @@
             </div>
 
             <div id="at-panel">
-                <button class="btn btn-navy" onclick="exportCSV()">XUẤT BÁO CÁO CSV</button>
+                <button class="btn btn-navy" onclick="exportCSV()">XUẤT FILE BÁO CÁO</button>
             </div>
 
             <div id="re-panel" style="display:none">
@@ -137,9 +143,9 @@
         </div>
 
         <div class="card">
-            <div style="font-weight: 800; color: var(--navy); margin-bottom: 10px;">LỊCH SỬ</div>
+            <div style="font-weight: 800; color: var(--navy); margin-bottom: 8px; font-size: 0.9rem;">LỊCH SỬ</div>
             <div id="logList" class="log-container">
-                <div style="color: #ccc; text-align: center; padding: 10px;">Chưa có dữ liệu</div>
+                <div style="color: #ccc; text-align: center; padding: 10px;">Đang chờ...</div>
             </div>
         </div>
     </div>
@@ -162,15 +168,16 @@
                 faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
             ]);
             loadData();
-            // Cấu hình video mượt hơn cho iPhone
+            
+            // Ép độ phân giải thấp để giảm lag cho iPhone
             const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } 
+                video: { facingMode: "user", width: 320, height: 240 } 
             });
             video.srcObject = stream;
             status.innerText = "HỆ THỐNG SẴN SÀNG";
             runDetection();
         } catch (e) {
-            status.innerText = "LỖI AI!";
+            status.innerText = "LỖI TẢI AI!";
         }
     }
 
@@ -178,7 +185,8 @@
         setInterval(async () => {
             if (isProcessing) return; 
 
-            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+            // Sử dụng inputSize nhỏ (128) để tăng tốc độ xử lý
+            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 128 }))
                 .withFaceLandmarks().withFaceDescriptors();
             
             const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
@@ -206,26 +214,27 @@
                     new faceapi.draw.DrawBox(box, { 
                         label: label, 
                         boxColor: color,
-                        drawLabelOptions: { fontColor: 'white', backgroundColor: color === "red" ? 'red' : '#0c2461' }
+                        drawLabelOptions: { fontSize: 14, fontColor: 'white', backgroundColor: color === "red" ? 'red' : '#0c2461' }
                     }).draw(canvas);
                 });
             }
-        }, 400); // Tăng lên 400ms để iPhone xử lý kịp, tránh đứng hình
+        }, 500); // Quét mỗi 0.5 giây để iPhone không bị quá tải
     }
 
     async function registerFace() {
         const name = document.getElementById('nameInput').value.trim();
-        if (!name) return alert("Bạn ơi, nhập tên trước đã!");
+        if (!name) return alert("Bạn ơi, chưa nhập tên!");
         
         isProcessing = true; 
-        status.innerText = "ĐANG CHỤP... ĐỪNG DI CHUYỂN";
+        status.innerText = "ĐANG QUÉT...";
         
-        // Mẹo chống freeze cho iPhone: Tạm dừng và chạy lại stream
+        // Chống đứng hình trên iOS
         video.pause();
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 400));
         await video.play();
 
-        const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+        const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
+            .withFaceLandmarks().withFaceDescriptor();
         
         if (d) {
             labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [d.descriptor]));
@@ -233,7 +242,7 @@
             alert("Đã lưu thành công cho bạn!");
             document.getElementById('nameInput').value = "";
         } else {
-            alert("Không tìm thấy mặt bạn ơi! Thử lại nhé.");
+            alert("Không tìm thấy mặt bạn ơi! Hãy đưa mặt vào chính giữa nhé.");
         }
         
         isProcessing = false;
@@ -256,11 +265,11 @@
             label: ld.label,
             descriptors: ld.descriptors.map(d => Array.from(d))
         }));
-        localStorage.setItem('db_final_v4.7', JSON.stringify(data));
+        localStorage.setItem('db_smooth_v4.8', JSON.stringify(data));
     }
 
     function loadData() {
-        const data = localStorage.getItem('db_final_v4.7');
+        const data = localStorage.getItem('db_smooth_v4.8');
         if (data) {
             labeledDescriptors = JSON.parse(data).map(d => 
                 new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc)))
