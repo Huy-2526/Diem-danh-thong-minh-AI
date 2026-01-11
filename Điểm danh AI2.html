@@ -3,173 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Điểm Danh AI - THCS Bình Thạnh</title>
+    <title>AI Attendance System - THCS Bình Thạnh</title>
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
         :root {
             --navy: #0c2461;
-            --blue-win: #0078d4;
-            --light-gray: #f8f9fa;
-            --border: #e1e4e8;
-            --shadow: 0 8px 24px rgba(0,0,0,0.12);
+            --success: #00ff00;
+            --danger: #ff0000;
+            --light: #f8f9fa;
         }
 
         body {
             margin: 0;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background-color: #f3f5f7;
-            color: #1a1a1a;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #e9ecef;
         }
 
+        /* GIAO DIỆN HEADER */
         header {
             background: white;
-            padding: 12px 30px;
+            padding: 10px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             border-bottom: 4px solid var(--navy);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
         .header-left { display: flex; align-items: center; gap: 15px; }
-        .header-left img { height: 50px; border-radius: 5px; }
-        .header-left .brand {
-            font-weight: 800;
-            font-size: 1.3rem;
-            color: var(--navy);
-            text-transform: uppercase;
-        }
+        .header-left img { height: 55px; }
+        .header-left .brand { font-weight: 800; color: var(--navy); font-size: 1.4rem; }
 
-        #clock { font-weight: 700; color: #444; font-size: 1.1rem; }
+        #clock { font-weight: bold; color: #333; font-size: 1.2rem; }
 
+        /* BỐ CỤC CHÍNH */
         .main-content {
             display: flex;
             max-width: 1400px;
-            margin: 25px auto;
+            margin: 20px auto;
             padding: 0 20px;
-            gap: 25px;
-        }
-
-        /* KHUNG CAMERA CHUẨN MƯỢT */
-        .camera-container {
-            flex: 1.5;
-            background: #000;
-            border-radius: 16px;
-            position: relative;
-            aspect-ratio: 16 / 9;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-            border: 4px solid white;
-        }
-        video, canvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            object-fit: cover;
-        }
-
-        /* BẢNG ĐIỀU KHIỂN */
-        .control-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
             gap: 20px;
         }
 
+        /* KHUNG CAMERA REAL-TIME */
+        .camera-container {
+            flex: 1.6;
+            background: #000;
+            border-radius: 15px;
+            position: relative;
+            aspect-ratio: 16 / 9;
+            overflow: hidden;
+            border: 5px solid white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        video, canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;
+        }
+
+        /* BẢNG ĐIỀU KHIỂN */
+        .control-panel { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+
         .card {
             background: white;
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: var(--shadow);
-            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
         .status-header {
-            background: #eef2f7;
+            background: #f1f3f5;
             padding: 12px;
-            border-radius: 10px;
-            text-align: center;
-            font-weight: 700;
-            color: var(--navy);
-            margin-bottom: 20px;
-            border: 1px dashed var(--navy);
-        }
-
-        .tab-menu {
-            display: flex;
-            margin-bottom: 20px;
-            background: #f0f0f0;
             border-radius: 8px;
-            padding: 4px;
-        }
-        .tab {
-            flex: 1;
             text-align: center;
-            padding: 10px;
-            cursor: pointer;
-            border-radius: 6px;
-            font-weight: 600;
-            color: #555;
-            transition: all 0.3s;
-        }
-        .tab.active {
-            background: white;
+            font-weight: 800;
             color: var(--navy);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            border-left: 5px solid var(--navy);
         }
 
-        input[type="text"] {
-            width: 100%;
-            padding: 14px;
-            border: 2px solid #eee;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            box-sizing: border-box;
-            font-size: 1rem;
-            transition: 0.3s;
+        .tab-menu { display: flex; margin-bottom: 15px; background: #eee; border-radius: 8px; padding: 5px; }
+        .tab {
+            flex: 1; padding: 8px; text-align: center; cursor: pointer;
+            font-weight: 600; border-radius: 5px; transition: 0.3s;
         }
-        input:focus { border-color: var(--blue-win); outline: none; }
+        .tab.active { background: white; color: var(--navy); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        input {
+            width: 100%; padding: 12px; margin-bottom: 10px;
+            border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; outline: none;
+        }
+        input:focus { border-color: var(--navy); }
 
         .btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            font-weight: 700; cursor: pointer; transition: 0.2s;
         }
         .btn-navy { background: var(--navy); color: white; }
-        .btn-navy:hover { background: #081a46; transform: translateY(-2px); }
-        
-        .log-container {
-            max-height: 280px;
-            overflow-y: auto;
-            margin-top: 10px;
-        }
+        .btn-navy:hover { transform: scale(1.02); opacity: 0.9; }
+
+        .log-container { max-height: 220px; overflow-y: auto; margin-top: 10px; }
         .log-item {
-            padding: 12px;
-            border-bottom: 1px solid #f0f0f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: slideIn 0.3s ease-out;
+            padding: 10px; border-bottom: 1px solid #f1f1f1;
+            display: flex; justify-content: space-between; font-size: 0.9rem;
         }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-
         .log-item b { color: var(--navy); }
-        .log-item span { font-size: 0.8rem; color: #888; background: #eee; padding: 2px 8px; border-radius: 20px; }
-
-        @media (max-width: 1000px) { .main-content { flex-direction: column; } }
     </style>
 </head>
 <body>
 
 <header>
     <div class="header-left">
-        <img src="https://via.placeholder.com/50" alt="Logo"> <div class="brand">THCS BÌNH THẠNH - AI ATTENDANCE v4.2</div>
+        <img src="ảnh logo trường.png" alt="Logo">
+        <div class="brand">THCS BÌNH THẠNH - AI ĐIỂM DANH THÔNG MINH</div>
     </div>
     <div id="clock">00:00:00</div>
 </header>
@@ -182,15 +129,15 @@
 
     <div class="control-panel">
         <div class="card">
-            <div id="status" class="status-header">HỆ THỐNG ĐANG KHỞI TẠO...</div>
+            <div id="status" class="status-header">ĐANG KHỞI CHẠY AI...</div>
             
             <div class="tab-menu">
                 <div class="tab active" id="tab-at" onclick="switchTab('at')">ĐIỂM DANH</div>
-                <div class="tab" id="tab-re" onclick="switchTab('re')">ĐĂNG KÝ MỚI</div>
+                <div class="tab" id="tab-re" onclick="switchTab('re')">ĐĂNG KÝ</div>
             </div>
 
             <div id="at-panel">
-                <button class="btn btn-navy" onclick="exportCSV()">XUẤT FILE BÁO CÁO (CSV)</button>
+                <button class="btn btn-navy" onclick="exportCSV()">XUẤT BÁO CÁO CSV</button>
             </div>
 
             <div id="re-panel" style="display:none">
@@ -200,12 +147,9 @@
         </div>
 
         <div class="card">
-            <div style="font-weight: 800; color: var(--navy); margin-bottom: 15px; font-size: 0.9rem; display: flex; justify-content: space-between;">
-                <span>LỊCH SỬ VÀO LỚP</span>
-                <span style="color: var(--blue-win); cursor: pointer;" onclick="clearLogs()">Xóa log</span>
-            </div>
-            <div class="log-container" id="logList">
-                <div style="color:#aaa; text-align:center; padding:20px;">Đang chờ dữ liệu...</div>
+            <div style="font-weight: 800; color: var(--navy); margin-bottom: 10px; border-bottom: 1px solid #eee;">LỊCH SỬ NHẬN DIỆN</div>
+            <div id="logList" class="log-container">
+                <div style="color: #ccc; text-align: center; padding: 10px;">Chưa có dữ liệu</div>
             </div>
         </div>
     </div>
@@ -214,103 +158,109 @@
 <script>
     const video = document.getElementById('video');
     const status = document.getElementById('status');
+    const canvas = document.getElementById('overlay');
     let labeledDescriptors = [];
     let logs = [["Tên Học Sinh", "Ngày", "Giờ"]];
-    let isProcessing = false; // KHÓA CHỐNG FREEZE CAMERA
+    let isProcessing = false;
 
     async function init() {
-        const URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+        const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
         try {
-            await faceapi.nets.tinyFaceDetector.loadFromUri(URL);
-            await faceapi.nets.faceLandmark68Net.loadFromUri(URL);
-            await faceapi.nets.faceRecognitionNet.loadFromUri(URL);
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+            ]);
             
             loadData();
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+            const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
             video.srcObject = stream;
-            status.innerText = "HỆ THỐNG SẴN SÀNG";
-            status.style.borderStyle = "solid";
             
+            status.innerText = "HỆ THỐNG SẴN SÀNG";
             runDetection();
         } catch (e) {
-            status.innerText = "LỖI KẾT NỐI CAMERA/AI";
+            status.innerText = "LỖI TẢI AI!";
             console.error(e);
         }
     }
 
     async function runDetection() {
-        const canvas = document.getElementById('overlay');
-        const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
-        faceapi.matchDimensions(canvas, displaySize);
-
         setInterval(async () => {
-            if (isProcessing) return; // Nếu đang bận đăng ký thì dừng quét điểm danh
+            if (isProcessing) return; 
 
+            // Nhận diện khuôn mặt
             const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
                 .withFaceLandmarks().withFaceDescriptors();
             
-            const context = canvas.getContext('2d');
-            context.clearRect(0, 0, canvas.width, canvas.height);
+            const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+            faceapi.matchDimensions(canvas, displaySize);
+            const resizedDetections = faceapi.resizeResults(detections, displaySize);
             
-            if (detections.length > 0 && labeledDescriptors.length > 0) {
-                const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
-                detections.forEach(d => {
+            // Xóa khung cũ
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (labeledDescriptors.length > 0) {
+                const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
+                
+                resizedDetections.forEach(d => {
                     const bestMatch = matcher.findBestMatch(d.descriptor);
+                    const box = d.detection.box;
+                    
+                    // Cấu hình khung vẽ
+                    let label = "NGƯỜI LẠ";
+                    let color = "red";
+                    
                     if (bestMatch.label !== 'unknown') {
-                        addLog(bestMatch.label);
-                        // Vẽ khung nhận diện cho chuyên nghiệp
-                        const drawBox = new faceapi.draw.DrawBox(d.detection.box, { label: bestMatch.label });
-                        drawBox.draw(canvas);
+                        label = bestMatch.label;
+                        color = "#00ff00"; // Màu xanh lá cho người quen
+                        addLog(label);
                     }
+
+                    // Vẽ khung bao quanh mặt
+                    new faceapi.draw.DrawBox(box, { 
+                        label: label, 
+                        boxColor: color,
+                        drawLabelOptions: { fontColor: 'white', backgroundColor: color === "red" ? 'red' : '#0c2461' }
+                    }).draw(canvas);
                 });
             }
-        }, 1000);
+        }, 100); // Quét siêu nhanh 0.1s/lần
     }
 
     async function registerFace() {
         const name = document.getElementById('nameInput').value.trim();
-        if (!name) return alert("Huy ơi, nhập tên học sinh trước nhé!");
+        if (!name) return alert("Huy ơi, chưa nhập tên!");
         
-        isProcessing = true; // BẬT KHÓA CHỐNG XUNG ĐỘT
-        status.innerText = "ĐANG CHỤP... ĐỪNG DI CHUYỂN";
+        isProcessing = true; 
+        status.innerText = "ĐANG CHỤP ẢNH...";
         
-        try {
-            const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-                .withFaceLandmarks().withFaceDescriptor();
-            
-            if (d) {
-                labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [d.descriptor]));
-                saveData();
-                alert("Thành công! Đã thêm " + name + " vào cơ sở dữ liệu.");
-                document.getElementById('nameInput').value = "";
-            } else {
-                alert("Không thấy rõ mặt Huy ơi! Thử lại nhé.");
-            }
-        } catch (err) {
-            alert("Lỗi chụp ảnh!");
-        } finally {
-            isProcessing = false; // MỞ KHÓA CAMERA
-            status.innerText = "HỆ THỐNG SẴN SÀNG";
+        const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+            .withFaceLandmarks().withFaceDescriptor();
+        
+        if (d) {
+            labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [d.descriptor]));
+            saveData();
+            alert("Đăng ký thành công: " + name);
+            document.getElementById('nameInput').value = "";
+        } else {
+            alert("Không tìm thấy khuôn mặt!");
         }
+        
+        isProcessing = false;
+        status.innerText = "HỆ THỐNG SẴN SÀNG";
     }
 
     function addLog(name) {
         const date = new Date().toLocaleDateString('vi-VN');
         const time = new Date().toLocaleTimeString('vi-VN');
-        
-        // Chặn trùng lặp điểm danh trong cùng 1 ngày
         if (!logs.some(l => l[0] === name && l[1] === date)) {
             logs.push([name, date, time]);
             const list = document.getElementById('logList');
             if (logs.length === 2) list.innerHTML = "";
+            list.innerHTML = `<div class="log-item"><b>${name}</b> <span>${time}</span></div>` + list.innerHTML;
             
-            list.innerHTML = `
-                <div class="log-item">
-                    <b>${name}</b> 
-                    <span>${time}</span>
-                </div>` + list.innerHTML;
-            
-            // Giọng nói chào mừng
+            // Phát âm thanh chào
             const speech = new SpeechSynthesisUtterance("Chào " + name);
             speech.lang = 'vi-VN';
             window.speechSynthesis.speak(speech);
@@ -322,11 +272,11 @@
             label: ld.label,
             descriptors: ld.descriptors.map(d => Array.from(d))
         }));
-        localStorage.setItem('binh_thanh_db_v4', JSON.stringify(data));
+        localStorage.setItem('db_binhthanh_v4.5', JSON.stringify(data));
     }
 
     function loadData() {
-        const data = localStorage.getItem('binh_thanh_db_v4');
+        const data = localStorage.getItem('db_binhthanh_v4.5');
         if (data) {
             labeledDescriptors = JSON.parse(data).map(d => 
                 new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc)))
@@ -337,15 +287,8 @@
     function switchTab(mode) {
         document.getElementById('at-panel').style.display = mode === 'at' ? 'block' : 'none';
         document.getElementById('re-panel').style.display = mode === 're' ? 'block' : 'none';
-        document.getElementById('tab-at').classList.toggle('active', mode === 'at');
-        document.getElementById('tab-re').classList.toggle('active', mode === 're');
-    }
-
-    function clearLogs() {
-        if(confirm("Xóa toàn bộ lịch sử điểm danh?")) {
-            logs = [["Tên Học Sinh", "Ngày", "Giờ"]];
-            document.getElementById('logList').innerHTML = '<div style="color:#aaa; text-align:center; padding:20px;">Đã xóa sạch dữ liệu</div>';
-        }
+        document.getElementById('tab-at').className = 'tab' + (mode === 'at' ? ' active' : '');
+        document.getElementById('tab-re').className = 'tab' + (mode === 're' ? ' active' : '');
     }
 
     function exportCSV() {
@@ -353,7 +296,7 @@
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `DiemDanh_BinhThanh_${new Date().toLocaleDateString()}.csv`;
+        link.download = `DiemDanh_THCS_BinhThanh.csv`;
         link.click();
     }
 
