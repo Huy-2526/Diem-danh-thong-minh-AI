@@ -58,13 +58,17 @@
         
         /* CSS CHO NÚT TRƯỜNG MỚI */
         .btn-school { 
-            background: linear-gradient(135deg, var(--blue-school), #0056b3); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            gap: 8px;
-            margin-top: 10px;
-        }
+        background: #0056b3; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        gap: 8px;
+        margin-top: 10px;
+        border: 2px solid #00ffff; /* Viền màu xanh neon */
+        box-shadow: 0 0 10px #1e90ff;
+        animation: blink-animation 2s infinite; /* Kích hoạt hiệu ứng nhấp nháy */
+        transition: 0.3s;
+    }
         .btn-school:hover { filter: brightness(1.1); transform: translateY(-2px); }
 
         .log-container { max-height: 300px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #eee; }
@@ -99,7 +103,7 @@
             <div id="at-panel">
                 <button class="btn" onclick="exportCSV()">XUẤT BÁO CÁO (CSV)</button>
                 <button class="btn btn-school" onclick="window.open('http://thcsbinhthanh.pgdtphongngu.edu.vn', '_blank')">
-                 THÔNG TIN TRƯỜNG THCS BÌNH THẠNH
+                 VỀ TRƯỜNG
                 </button>
             </div>
 
