@@ -6,14 +6,13 @@
     <title>AI Attendance v5.4 - THCS Bình Thạnh</title>
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
-        :root { --navy: #0c2461; --green: #00ff00; --red: #ff3b30; }
+        :root { --navy: #0c2461; --green: #00ff00; --red: #ff3b30; --blue-school: #1e90ff; }
         body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; touch-action: manipulation; }
         header { background: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--navy); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .header-left { display: flex; align-items: center; gap: 10px; }
         .header-left img { height: 40px; }
         .header-left .brand { font-weight: 800; color: var(--navy); font-size: 1rem; }
         
-        /* Bố cục chính */
         .main-content { 
             display: flex; 
             flex-direction: column; 
@@ -23,7 +22,6 @@
             gap: 15px; 
         }
 
-        /* Chia 2 cột khi xem trên Laptop (màn hình > 768px) */
         @media (min-width: 768px) {
             .main-content {
                 display: grid;
@@ -55,9 +53,20 @@
         .tab.active { background: white; color: var(--navy); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
         input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; margin-bottom: 5px; -webkit-tap-highlight-color: transparent; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; margin-bottom: 10px; -webkit-tap-highlight-color: transparent; transition: 0.3s; }
         .btn-red { background: var(--red); }
         
+        /* CSS CHO NÚT TRƯỜNG MỚI */
+        .btn-school { 
+            background: linear-gradient(135deg, var(--blue-school), #0056b3); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-school:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
         .log-container { max-height: 300px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #eee; }
         .log-item { padding: 10px 0; border-bottom: 1px solid #f9f9f9; display: flex; justify-content: space-between; font-size: 0.9rem; }
         #clock { font-weight: bold; font-size: 0.8rem; }
@@ -89,6 +98,9 @@
             
             <div id="at-panel">
                 <button class="btn" onclick="exportCSV()">XUẤT BÁO CÁO (CSV)</button>
+                <button class="btn btn-school" onclick="window.open('http://thcsbinhthanh.pgdphongngu.edu.vn', '_blank')">
+                    🏫 THCS BÌNH THẠNH
+                </button>
             </div>
 
             <div id="re-panel" style="display:none">
@@ -151,7 +163,6 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             if (labeledDescriptors.length > 0) {
-                // Ngưỡng 0.54 bạn vừa chọn "ngon" nhất
                 const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.54);
                 resized.forEach(d => {
                     const best = matcher.findBestMatch(d.descriptor);
@@ -191,7 +202,6 @@
             } catch (e) { console.error(e); }
         }
 
-        // RESET CAMERA VÔ ĐIỀU KIỆN 0.055S NHƯ BẠN YÊU CẦU
         if (video.srcObject) {
             video.srcObject.getTracks().forEach(track => track.stop());
         }
