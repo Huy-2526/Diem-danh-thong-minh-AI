@@ -160,7 +160,7 @@
         if (video.srcObject) {
             video.srcObject.getTracks().forEach(track => track.stop());
         }
-        await new Promise(r => setTimeout(r, 70)); 
+        await new Promise(r => setTimeout(r,55)); 
         await startCamera();
         
         isProcessing = false;
