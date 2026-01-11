@@ -3,27 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Attendance - THCS Bình Thạnh</title>
+    <title>AI Attendance v5.0 - THCS Bình Thạnh</title>
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
-        :root { --navy: #0c2461; --success: #00ff00; }
-        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #f0f2f5; }
-        header { background: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--navy); }
+        :root { --navy: #0c2461; --green: #00ff00; }
+        body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; touch-action: manipulation; }
+        header { background: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--navy); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .header-left { display: flex; align-items: center; gap: 10px; }
         .header-left img { height: 40px; }
         .header-left .brand { font-weight: 800; color: var(--navy); font-size: 1rem; }
         .main-content { display: flex; flex-direction: column; max-width: 1200px; margin: 10px auto; padding: 0 10px; gap: 10px; }
-        .camera-container { background: #000; border-radius: 12px; position: relative; aspect-ratio: 4/3; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .camera-container { background: #000; border-radius: 15px; position: relative; aspect-ratio: 4/3; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; }
-        .status-header { background: #f8f9fa; padding: 8px; border-radius: 6px; text-align: center; font-weight: 800; color: var(--navy); border-left: 4px solid var(--navy); margin-bottom: 10px; }
-        .tab-menu { display: flex; background: #eee; border-radius: 8px; padding: 4px; margin-bottom: 10px; }
-        .tab { flex: 1; padding: 8px; text-align: center; cursor: pointer; font-weight: 600; border-radius: 6px; font-size: 0.85rem; }
-        .tab.active { background: white; color: var(--navy); }
-        input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; }
-        .log-container { max-height: 150px; overflow-y: auto; font-size: 0.8rem; }
-        .log-item { padding: 6px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .status-header { background: #f8f9fa; padding: 8px; border-radius: 6px; text-align: center; font-weight: 800; color: var(--navy); border-left: 4px solid var(--navy); margin-bottom: 12px; font-size: 0.9rem; }
+        .tab-menu { display: flex; background: #eee; border-radius: 8px; padding: 4px; margin-bottom: 12px; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: 600; border-radius: 6px; font-size: 0.85rem; color: #666; transition: 0.2s; }
+        .tab.active { background: white; color: var(--navy); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
+        input:focus { border-color: var(--navy); }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; active { opacity: 0.8; } }
+        .log-container { max-height: 180px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #eee; }
+        .log-item { padding: 8px 0; border-bottom: 1px solid #f9f9f9; display: flex; justify-content: space-between; font-size: 0.85rem; }
+        #clock { font-weight: bold; font-size: 0.8rem; color: #444; }
     </style>
 </head>
 <body>
@@ -31,9 +33,9 @@
 <header>
     <div class="header-left">
         <img src="ảnh logo trường.png" alt="Logo">
-        <div class="brand">THCS BÌNH THẠNH - AI v4.9</div>
+        <div class="brand">THCS BÌNH THẠNH - v5.0</div>
     </div>
-    <div id="clock" style="font-size: 0.8rem; font-weight: bold;">00:00:00</div>
+    <div id="clock">00:00:00</div>
 </header>
 
 <div class="main-content">
@@ -44,22 +46,27 @@
 
     <div class="control-panel">
         <div class="card">
-            <div id="status" class="status-header">ĐANG KHỞI CHẠY AI...</div>
+            <div id="status" class="status-header">ĐANG KHỞI ĐỘNG AI...</div>
             <div class="tab-menu">
                 <div class="tab active" id="tab-at" onclick="switchTab('at')">ĐIỂM DANH</div>
                 <div class="tab" id="tab-re" onclick="switchTab('re')">ĐĂNG KÝ</div>
             </div>
+            
             <div id="at-panel">
-                <button class="btn" onclick="exportCSV()">XUẤT BÁO CÁO</button>
+                <button class="btn" onclick="exportCSV()">XUẤT BÁO CÁO (CSV)</button>
             </div>
+
             <div id="re-panel" style="display:none">
-                <input type="text" id="nameInput" placeholder="Nhập tên học sinh...">
+                <input type="text" id="nameInput" placeholder="Nhập tên học sinh..." autocomplete="off">
                 <button class="btn" onclick="registerFace()">CHỤP ẢNH ĐĂNG KÝ</button>
             </div>
         </div>
-        <div class="card">
-            <div style="font-weight: 800; color: var(--navy); margin-bottom: 5px; font-size: 0.85rem;">LỊCH SỬ</div>
-            <div id="logList" class="log-container"></div>
+
+        <div class="card" style="margin-top:10px;">
+            <div style="font-weight: 800; color: var(--navy); font-size: 0.85rem;">NHẬT KÝ ĐIỂM DANH</div>
+            <div id="logList" class="log-container">
+                <div style="color: #ccc; text-align: center; padding: 20px;">Chưa có dữ liệu</div>
+            </div>
         </div>
     </div>
 </div>
@@ -76,6 +83,7 @@
     async function init() {
         const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
         try {
+            status.innerText = "ĐANG TẢI MODEL...";
             await Promise.all([
                 faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
                 faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
@@ -85,21 +93,29 @@
             await startCamera();
             status.innerText = "HỆ THỐNG SẴN SÀNG";
             startDetectionLoop();
-        } catch (e) { status.innerText = "LỖI TẢI AI!"; }
+        } catch (e) { 
+            status.innerText = "LỖI KẾT NỐI AI!";
+            console.error(e);
+        }
     }
 
     async function startCamera() {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "user", width: 320, height: 240 } 
-        });
-        video.srcObject = stream;
-        return new Promise(resolve => video.onloadedmetadata = resolve);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "user", width: 320, height: 240 } 
+            });
+            video.srcObject = stream;
+            return new Promise(resolve => video.onloadedmetadata = resolve);
+        } catch (err) {
+            alert("Bạn ơi, hãy cho phép quyền truy cập Camera nhé!");
+        }
     }
 
     function startDetectionLoop() {
         if (detectionInterval) clearInterval(detectionInterval);
         detectionInterval = setInterval(async () => {
             if (isProcessing) return;
+            
             const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 128 }))
                 .withFaceLandmarks().withFaceDescriptors();
             
@@ -113,41 +129,49 @@
                 const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
                 resized.forEach(d => {
                     const best = matcher.findBestMatch(d.descriptor);
-                    const color = best.label !== 'unknown' ? '#00ff00' : 'red';
+                    const color = best.label !== 'unknown' ? '#00ff00' : '#ff3b30';
                     if (best.label !== 'unknown') addLog(best.label);
-                    new faceapi.draw.DrawBox(d.detection.box, { label: best.label, boxColor: color }).draw(canvas);
+                    
+                    new faceapi.draw.DrawBox(d.detection.box, { 
+                        label: best.label === 'unknown' ? 'NGƯỜI LẠ' : best.label, 
+                        boxColor: color 
+                    }).draw(canvas);
                 });
             }
-        }, 600);
+        }, 500); // Tần suất quét 0.5s để iPhone bền bỉ hơn
     }
 
     async function registerFace() {
-        const name = document.getElementById('nameInput').value.trim();
-        if (!name) return alert("Bạn ơi, chưa nhập tên!");
+        const nameInput = document.getElementById('nameInput');
+        const name = nameInput.value.trim();
+        if (!name) return alert("Bạn ơi, nhập tên trước đã!");
         
         isProcessing = true;
-        clearInterval(detectionInterval); // Dừng quét điểm danh ngay lập tức
-        status.innerText = "ĐANG XỬ LÝ...";
+        clearInterval(detectionInterval); 
+        status.innerText = "ĐANG CHỤP ẢNH...";
 
         try {
-            // Chụp mặt với cấu hình cao hơn một chút để chính xác
             const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
                 .withFaceLandmarks().withFaceDescriptor();
             
             if (d) {
                 labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [d.descriptor]));
                 saveData();
-                alert("Đã lưu: " + name);
-                document.getElementById('nameInput').value = "";
+                alert("Chúc mừng bạn! Đã lưu thành công.");
+                nameInput.value = "";
             } else {
-                alert("Không thấy mặt bạn ơi!");
+                alert("Bạn ơi, đưa mặt sát camera hơn chút nhé!");
             }
-        } catch (e) { alert("Lỗi camera!"); }
+        } catch (e) { console.error(e); }
 
-        // BÍ QUYẾT: Reset lại camera sau khi đăng ký để hết freeze
-        video.srcObject.getTracks().forEach(track => track.stop());
-        await startCamera();
+        // RESET CAMERA VỚI ĐỘ TRỄ 0.07S NHƯ BẠN YÊU CẦU
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+        }
         
+        await new Promise(resolve => setTimeout(resolve, 70)); // Đợi đúng 0.07s
+        
+        await startCamera();
         isProcessing = false;
         status.innerText = "HỆ THỐNG SẴN SÀNG";
         startDetectionLoop();
@@ -159,6 +183,7 @@
         if (!logs.some(l => l[0] === name && l[1] === date)) {
             logs.push([name, date, time]);
             const list = document.getElementById('logList');
+            if (logs.length === 2) list.innerHTML = "";
             list.innerHTML = `<div class="log-item"><b>${name}</b> <span>${time}</span></div>` + list.innerHTML;
         }
     }
@@ -167,11 +192,11 @@
         const data = labeledDescriptors.map(ld => ({
             label: ld.label, descriptors: ld.descriptors.map(d => Array.from(d))
         }));
-        localStorage.setItem('db_iron_v4.9', JSON.stringify(data));
+        localStorage.setItem('db_flash_v5', JSON.stringify(data));
     }
 
     function loadData() {
-        const data = localStorage.getItem('db_iron_v4.9');
+        const data = localStorage.getItem('db_flash_v5');
         if (data) {
             labeledDescriptors = JSON.parse(data).map(d => 
                 new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc)))
@@ -191,7 +216,7 @@
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `DiemDanh.csv`;
+        link.download = `BaoCao_DiemDanh.csv`;
         link.click();
     }
 
