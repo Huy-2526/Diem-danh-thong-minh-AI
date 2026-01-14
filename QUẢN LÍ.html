@@ -2,64 +2,92 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ADMIN QUẢN LÝ - THCS BÌNH THẠNH</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Điểm Danh - THCS Bình Thạnh</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
-        :root { --navy: #0c2461; --blue: #1e90ff; --red: #ff3b30; }
-        body { font-family: -apple-system, sans-serif; background: #f4f7f9; margin: 0; padding: 0; }
-        .app-bar { background: var(--navy); color: white; padding: 20px; text-align: center; font-weight: bold; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        .container { padding: 15px; max-width: 600px; margin: auto; }
-        .card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        :root { --navy: #0c2461; --blue: #1e90ff; --green: #28a745; --light: #f4f7f6; }
+        body { font-family: -apple-system, sans-serif; background: var(--light); margin: 0; padding: 20px; }
         
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .stat-item { background: white; padding: 15px; border-radius: 12px; text-align: center; border-bottom: 4px solid var(--blue); }
-        .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--navy); }
+        .admin-container { max-width: 1000px; margin: 0 auto; }
+        header { background: white; padding: 15px 25px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; border-left: 6px solid var(--navy); }
+        h1 { color: var(--navy); margin: 0; font-size: 1.4rem; }
+
+        .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .grid-layout { grid-template-columns: 1fr; } }
+
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .card-title { font-weight: 800; color: var(--navy); border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Style cho danh sách máy quét */
+        .device-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 15px; 
+            background: #f8fbff; 
+            border-radius: 10px; 
+            margin-bottom: 10px; 
+            border: 1px solid #e1e8f0;
+            transition: 0.3s;
+        }
+        .device-item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         
-        h2 { font-size: 1rem; color: var(--navy); margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px; }
-        .device-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 10px; margin-bottom: 8px; border-left: 4px solid #28a745; }
-        .dot { height: 10px; width: 10px; background-color: #28a745; border-radius: 50%; display: inline-block; animation: blink 1s infinite; }
+        .class-name { font-weight: bold; color: var(--navy); font-size: 1.1rem; }
+        .update-time { font-size: 0.75rem; color: #888; }
         
-        .student-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
-        .student-name { font-weight: bold; color: #333; }
-        .btn-del { background: var(--red); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-        .empty-msg { text-align: center; color: #999; font-style: italic; padding: 10px; }
+        .stats-badge { 
+            background: white; 
+            padding: 5px 15px; 
+            border-radius: 20px; 
+            border: 2px solid var(--green);
+            text-align: center;
+        }
+        .present-count { color: var(--green); font-weight: 800; font-size: 1.2rem; }
+        .total-count { color: #666; font-size: 0.9rem; }
+
+        /* Nhật ký điểm danh nhanh */
+        .log-item { padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.9rem; display: flex; justify-content: space-between; }
+        .status-online { display: inline-block; width: 10px; height: 10px; background: var(--green); border-radius: 50%; margin-right: 5px; }
     </style>
 </head>
 <body>
 
-<div class="app-bar">QUẢN LÝ ĐIỂM DANH AI</div>
-
-<div class="container">
-    <div class="stat-grid">
-        <div class="stat-item">
-            <div class="stat-value" id="count-st">0</div>
-            <small>Học sinh gốc</small>
+<div class="admin-container">
+    <header>
+        <div>
+            <h1>HỆ THỐNG QUẢN LÝ TẬP TRUNG</h1>
+            <small>Trường THCS Bình Thạnh</small>
         </div>
-        <div class="stat-item">
-            <div class="stat-value" id="count-dev">0</div>
-            <small>Máy đang mở</small>
+        <div id="live-clock" style="font-weight: bold; color: var(--blue);">00:00:00</div>
+    </header>
+
+    <div class="grid-layout">
+        <div class="card">
+            <div class="card-title">
+                <span>📺 MÁY QUÉT CÁC LỚP</span>
+                <span id="device-count" style="font-size: 0.8rem; background: var(--navy); color: white; padding: 2px 8px; border-radius: 10px;">0 Online</span>
+            </div>
+            <div id="status-list">
+                <p style="text-align:center; color:#999;">Đang tìm thiết bị...</p>
+            </div>
         </div>
-    </div>
 
-    <div class="card">
-        <h2>📱 MÁY ĐANG TRỰC TUYẾN</h2>
-        <div id="dev-list"><div class="empty-msg">Đang tìm máy quét...</div></div>
-    </div>
-
-    <div class="card">
-        <h2>👥 DANH SÁCH DỮ LIỆU GỐC</h2>
-        <div id="st-list"><div class="empty-msg">Đang tải danh sách...</div></div>
+        <div class="card">
+            <div class="card-title">🚀 HOẠT ĐỘNG VỪA XONG</div>
+            <div id="recent-logs">
+                <p style="text-align:center; color:#999;">Chưa có dữ liệu mới...</p>
+            </div>
+            <button onclick="location.reload()" style="width:100%; margin-top:15px; padding:10px; cursor:pointer; border-radius:8px; border:1px solid #ddd; background:#fff;">LÀM MỚI DỮ LIỆU</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // CẤU HÌNH FIREBASE
+    // CẤU HÌNH FIREBASE (Giữ nguyên của Huy)
     const firebaseConfig = {
         apiKey: "AIzaSyCRlm5nRrp3DTXV-XJITup3xEHAc5re7oU",
         databaseURL: "https://diemdanhthcsbt-default-rtdb.asia-southeast1.firebasedatabase.app/",
@@ -68,75 +96,63 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. LẮNG NGHE MÁY QUÉT ONLINE (DiemDanh_Status)
+    // 1. LẮNG NGHE TRẠNG THÁI VÀ SĨ SỐ TỪNG MÁY
     db.ref('DiemDanh_Status').on('value', snapshot => {
-        const devs = snapshot.val() || {};
-        const div = document.getElementById('dev-list');
-        div.innerHTML = '';
-        let count = 0;
-
-        for (let key in devs) {
-            count++;
-            const device = devs[key];
-            // Sửa lỗi: Hiển thị tên máy (ưu tiên .name)
-            const deviceName = device.name || "Máy Quét Không Tên";
-            const time = device.lastSeen || "--:--";
-            
-            div.innerHTML += `
-                <div class="device-row">
-                    <span><span class="dot"></span> <b>${deviceName}</b></span>
-                    <small>${time}</small>
-                </div>`;
-        }
-        document.getElementById('count-dev').innerText = count;
-        if (count === 0) div.innerHTML = '<div class="empty-msg">Không có máy nào Online</div>';
-    });
-
-    // 2. LẮNG NGHE DANH SÁCH HỌC SINH (school_data)
-    let students = [];
-    db.ref('school_data').on('value', snapshot => {
+        const statusList = document.getElementById('status-list');
+        const deviceCount = document.getElementById('device-count');
+        statusList.innerHTML = '';
         const data = snapshot.val();
         
-        // Chuyển đổi dữ liệu từ Firebase thành mảng
-        if (data && !Array.isArray(data)) {
-            students = Object.keys(data).map(k => ({ id: k, ...data[k] }));
-        } else {
-            students = data || [];
-        }
-
-        const div = document.getElementById('st-list');
-        div.innerHTML = '';
-        
-        students.forEach((item, index) => {
-            if (!item) return;
-            // Sửa lỗi: Hiển thị tên (ưu tiên .label)
-            const nameToShow = item.label || item.name || "Học sinh ẩn danh";
+        if (data) {
+            const devices = Object.values(data);
+            deviceCount.innerText = devices.length + " Online";
             
-            div.innerHTML += `
-                <div class="student-item">
-                    <span class="student-name">${index + 1}. ${nameToShow}</span>
-                    <button class="btn-del" onclick="delStudent('${index}')">Xóa</button>
-                </div>`;
-        });
-        
-        document.getElementById('count-st').innerText = students.length;
-        if (students.length === 0) div.innerHTML = '<div class="empty-msg">Chưa có dữ liệu học sinh</div>';
+            devices.forEach(device => {
+                const item = document.createElement('div');
+                item.className = 'device-item';
+                
+                // Tính phần trăm để nếu Huy muốn làm thanh progress sau này
+                const percent = device.totalStudents > 0 ? Math.round((device.presentStudents / device.totalStudents) * 100) : 0;
+
+                item.innerHTML = `
+                    <div>
+                        <div class="class-name"><span class="status-online"></span>${device.name}</div>
+                        <div class="update-time">Cập nhật: ${device.lastSeen}</div>
+                    </div>
+                    <div class="stats-badge">
+                        <span class="present-count">${device.presentStudents || 0}</span>
+                        <span class="total-count">/${device.totalStudents || 0}</span>
+                        <div style="font-size: 0.6rem; color: var(--green); font-weight: bold;">${percent}%</div>
+                    </div>
+                `;
+                statusList.appendChild(item);
+            });
+        } else {
+            deviceCount.innerText = "0 Online";
+            statusList.innerHTML = '<p style="text-align:center; color:#999; padding: 20px;">Hiện không có máy lớp nào đang mở.</p>';
+        }
     });
 
-    // HÀM XÓA HỌC SINH
-    function delStudent(index) {
-        if (confirm("Bạn ơi, bạn có chắc muốn xóa học sinh này không?")) {
-            // Chuyển index sang số để splice chính xác
-            const idx = parseInt(index);
-            students.splice(idx, 1);
-            
-            // Cập nhật lại lên Firebase
-            db.ref('school_data').set(students)
-                .then(() => alert("Đã xóa thành công!"))
-                .catch(err => alert("Lỗi khi xóa: " + err));
-        }
-    }
-</script>
+    // 2. HIỂN THỊ ĐỒNG HỒ
+    setInterval(() => {
+        document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('vi-VN');
+    }, 1000);
 
+    // 3. (TÙY CHỌN) HIỂN THỊ DỮ LIỆU MỚI NHẤT TRÊN FIREBASE ĐỂ THEO DÕI
+    // Nếu Huy muốn hiện log chung của tất cả các máy đổ về đây
+    db.ref('Remote_View').on('value', snapshot => {
+        const logDiv = document.getElementById('recent-logs');
+        const data = snapshot.val();
+        if (data) {
+            logDiv.innerHTML = `
+                <div class="log-item" style="background: #fff8e1; padding: 10px; border-radius: 8px; border: 1px solid #ffe082;">
+                    <span><b>${data.class}:</b> ${data.last_user}</span>
+                    <span style="color: #666;">${data.time}</span>
+                </div>
+            ` + logDiv.innerHTML;
+        }
+    });
+
+</script>
 </body>
 </html>
