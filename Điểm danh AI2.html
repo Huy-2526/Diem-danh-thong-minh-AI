@@ -56,35 +56,29 @@
         .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; margin-bottom: 10px; -webkit-tap-highlight-color: transparent; transition: 0.3s; }
         .btn-red { background: var(--red); }
         
-        /* CSS CHO NÚT TRƯỜNG MỚI */
         .btn-school-info { 
-    background: #0c2461 !important; /* Màu nền gốc */
-    color: white !important;
-    border: 2px solid #00ffff !important; 
-    box-shadow: 0 0 10px #1e90ff !important;
-    animation: blink-animation 1.5s infinite !important; /* Chỉnh 1.5s cho nháy nhanh hơn tí */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-}
+            background: #0c2461 !important;
+            color: white !important;
+            border: 2px solid #00ffff !important; 
+            box-shadow: 0 0 10px #1e90ff !important;
+            animation: blink-animation 1.5s infinite !important;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
 
-@keyframes blink-animation {
-    0% { 
-        background-color: #0c2461; 
-        box-shadow: 0 0 5px #1e90ff; 
-    }
-    50% { 
-        background-color: #007bff; /* Đổi sang xanh sáng */
-        box-shadow: 0 0 25px #00ffff, 0 0 40px #00ffff; 
-        transform: scale(1.05); /* Nở to ra 5% */
-    }
-    100% { 
-        background-color: #0c2461; 
-        box-shadow: 0 0 5px #1e90ff; 
-    }
-}
-        .btn-school:hover { filter: brightness(1.1); transform: translateY(-2px); }
+        @keyframes blink-animation {
+            0% { background-color: #0c2461; box-shadow: 0 0 5px #1e90ff; }
+            50% { background-color: #007bff; box-shadow: 0 0 25px #00ffff, 0 0 40px #00ffff; transform: scale(1.05); }
+            100% { background-color: #0c2461; box-shadow: 0 0 5px #1e90ff; }
+        }
+
+        /* CSS MỚI CHO PHẦN THỐNG KÊ */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+        .stat-box { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
+        .stat-box span { display: block; font-size: 0.7rem; font-weight: 700; color: #666; text-transform: uppercase; }
+        .stat-box div { font-size: 1.2rem; font-weight: 800; color: var(--navy); }
 
         .log-container { max-height: 300px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #eee; }
         .log-item { padding: 10px 0; border-bottom: 1px solid #f9f9f9; display: flex; justify-content: space-between; font-size: 0.9rem; }
@@ -130,6 +124,12 @@
         </div>
 
         <div class="card">
+            <div class="stats-grid">
+                <div class="stat-box"><span>Sĩ số</span><div id="total-students">0</div></div>
+                <div class="stat-box"><span>Hiện diện</span><div id="present-students">0</div></div>
+                <div class="stat-box"><span>Đi trễ</span><div id="late-students">0</div></div>
+            </div>
+            
             <div style="font-weight: 800; color: var(--navy); font-size: 0.85rem;">NHẬT KÝ ĐIỂM DANH</div>
             <div id="logList" class="log-container"></div>
         </div>
@@ -145,6 +145,9 @@
     let isProcessing = false;
     let detectionInterval;
 
+    // QUY ĐỊNH GIỜ ĐI TRỄ (Ví dụ sau 07:30:00 là trễ)
+    const LATE_TIME = "07:30:00";
+
     async function init() {
         const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
         try {
@@ -157,6 +160,7 @@
             await startCamera();
             status.innerText = "HỆ THỐNG SẴN SÀNG";
             startDetectionLoop();
+            updateStats(); // Cập nhật sĩ số lúc đầu
         } catch (e) { status.innerText = "LỖI KẾT NỐI AI!"; }
     }
 
@@ -215,6 +219,7 @@
                 if (d) {
                     labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [d.descriptor]));
                     saveData();
+                    updateStats(); // Cập nhật sĩ số sau khi đăng ký mới
                     alert("Đã lưu thành công cho bạn!");
                     nameInput.value = "";
                 } else { alert("Không thấy mặt bạn ơi!"); }
@@ -244,11 +249,26 @@
     function addLog(name) {
         const date = new Date().toLocaleDateString('vi-VN');
         const time = new Date().toLocaleTimeString('vi-VN');
+        // Kiểm tra xem hôm nay người này đã điểm danh chưa
         if (!logs.some(l => l[0] === name && l[1] === date)) {
             logs.push([name, date, time]);
             const list = document.getElementById('logList');
             list.innerHTML = `<div class="log-item"><b>${name}</b> <span>${time}</span></div>` + list.innerHTML;
+            updateStats(); // Cập nhật hiện diện và đi trễ
         }
+    }
+
+    function updateStats() {
+        const date = new Date().toLocaleDateString('vi-VN');
+        const total = labeledDescriptors.length;
+        // Đếm số người trong logs có ngày là hôm nay (trừ dòng header)
+        const present = logs.filter((l, index) => index > 0 && l[1] === date).length;
+        // Đếm số người đi trễ (so sánh chuỗi giờ)
+        const late = logs.filter((l, index) => index > 0 && l[1] === date && l[2] > LATE_TIME).length;
+
+        document.getElementById('total-students').innerText = total;
+        document.getElementById('present-students').innerText = present;
+        document.getElementById('late-students').innerText = late;
     }
 
     function clearData() {
