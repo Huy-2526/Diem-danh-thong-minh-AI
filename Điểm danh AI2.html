@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Máy Quét v5.8 - THCS Bình Thạnh</title>
+    <title>AI Máy Quét v6.0 - THCS Bình Thạnh</title>
     
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
-        /* GIỮ Y NGUYÊN CSS GỐC CỦA HUY */
         :root { --navy: #0c2461; --green: #00ff00; --red: #ff3b30; --blue-school: #1e90ff; }
         body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; touch-action: manipulation; }
         header { background: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--navy); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -68,6 +67,7 @@
             <div id="at-panel">
                 <button class="btn" onclick="exportCSV()">XUẤT BÁO CÁO (CSV)</button>
                 <button class="btn btn-school-info" onclick="window.open('http://thcsbinhthanh.pgdtphongngu.edu.vn', '_blank')">VỀ TRƯỜNG</button>
+                <button class="btn" style="background: #666;" onclick="changeClass()">ĐỔI TÊN LỚP</button>
             </div>
 
             <div id="re-panel" style="display:none">
@@ -113,37 +113,55 @@
                 faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                 faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
             ]);
+
+            // BƯỚC 1: HỎI TÊN LỚP
+            checkClass();
+
+            // BƯỚC 2: RESTART CAMERA NGAY SAU KHI CÓ TÊN LỚP
+            status.innerText = "ĐANG MỞ CAMERA...";
             await startCamera();
+
             loadDataFromCloud();
             reportPresence();
+            
             status.innerText = "HỆ THỐNG SẴN SÀNG";
             startDetectionLoop();
-            setInterval(reportPresence, 15000); // Tự động báo sĩ số mỗi 15s
+            
+            setInterval(reportPresence, 20000);
         } catch (e) { status.innerText = "LỖI KHỞI TẠO!"; }
     }
 
+    function checkClass() {
+        if (!localStorage.getItem('SavedClassName')) {
+            let className = prompt("Bạn ơi, máy này dùng cho lớp nào?", "Lớp 9A1");
+            if (!className) className = "Lớp Chưa Tên";
+            localStorage.setItem('SavedClassName', className);
+        }
+    }
+
     async function startCamera() {
-        if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "user", width: 640, height: 480 } 
-        });
-        video.srcObject = stream;
-        return new Promise(resolve => video.onloadedmetadata = resolve);
+        // Đóng luồng cũ nếu có (Restart thực thụ)
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "user", width: 640, height: 480 } 
+            });
+            video.srcObject = stream;
+            return new Promise(resolve => video.onloadedmetadata = resolve);
+        } catch (err) {
+            status.innerText = "LỖI CAM! HÃY CHO PHÉP QUYỀN TRUY CẬP.";
+        }
     }
 
     function reportPresence() {
-        let className = localStorage.getItem('SavedClassName');
-        if (!className) {
-            className = prompt("Bạn ơi, máy này dùng cho lớp nào?", "Lớp 9A1");
-            if (!className) className = "Lớp Ẩn Danh";
-            localStorage.setItem('SavedClassName', className);
-        }
-
+        const className = localStorage.getItem('SavedClassName') || "Lớp Ẩn Danh";
         const deviceID = "DEVICE_" + className.replace(/\s+/g, '_');
         const total = document.getElementById('total-students').innerText;
         const present = document.getElementById('present-students').innerText;
 
-        db.ref('DiemDanh_Status/' + deviceID).set({
+        db.ref('DiemDaily_Status/' + deviceID).set({
             name: className.toUpperCase(),
             status: "Online",
             totalStudents: total,
@@ -177,7 +195,11 @@
                             }).draw(canvas);
                         });
                     }
-                } catch (err) { await startCamera(); }
+                } catch (err) {
+                    // Nếu cam đứng hình, restart ngầm không hỏi lại lớp
+                    console.log("Cam freeze, restarting...");
+                    await startCamera(); 
+                }
             }
             requestAnimationFrame(scan);
         }
@@ -198,15 +220,19 @@
         const date = new Date().toLocaleDateString('vi-VN');
         const total = labeledDescriptors.length;
         const present = logs.filter((l, i) => i > 0 && l[1] === date).length;
-        
         document.getElementById('total-students').innerText = total;
         document.getElementById('present-students').innerText = present;
         document.getElementById('absent-students').innerText = total - present;
-        
-        reportPresence(); // Cập nhật sĩ số về Admin ngay khi có người mới
+        reportPresence(); 
     }
 
-    // Các hàm phụ giữ nguyên
+    function changeClass() {
+        if(confirm("Huy muốn đổi tên lớp cho thiết bị này?")) {
+            localStorage.removeItem('SavedClassName');
+            location.reload();
+        }
+    }
+
     async function registerFace() {
         const nameInput = document.getElementById('nameInput');
         const name = nameInput.value.trim();
@@ -238,12 +264,14 @@
     }
 
     function clearData() { if(confirm("Xóa hết không Huy?")) { db.ref('school_data').remove(); location.reload(); } }
+    
     function switchTab(mode) {
         document.getElementById('at-panel').style.display = mode === 'at' ? 'block' : 'none';
         document.getElementById('re-panel').style.display = mode === 're' ? 'block' : 'none';
         document.getElementById('tab-at').className = 'tab' + (mode === 'at' ? ' active' : '');
         document.getElementById('tab-re').className = 'tab' + (mode === 're' ? ' active' : '');
     }
+
     function exportCSV() {
         let csv = "\ufeff" + logs.map(row => row.join(",")).join("\n");
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -252,6 +280,7 @@
         link.download = `BaoCao.csv`;
         link.click();
     }
+
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN'); }, 1000);
     init();
 </script>
