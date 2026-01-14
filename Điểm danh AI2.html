@@ -35,7 +35,11 @@
         .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; margin-bottom: 10px; -webkit-tap-highlight-color: transparent; transition: 0.3s; }
         .btn-red { background: var(--red); }
         
-        .btn-school-info { background: #0c2461 !important; color: white !important; border: 2px solid #00ffff !important; box-shadow: 0 0 10px #1e90ff !important; animation: blink-animation 1.5s infinite !important; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn-school-info { 
+            background: #0c2461 !important; color: white !important; border: 2px solid #00ffff !important; 
+            box-shadow: 0 0 10px #1e90ff !important; animation: blink-animation 1.5s infinite !important; 
+            display: flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none;
+        }
 
         @keyframes blink-animation {
             0% { background-color: #0c2461; box-shadow: 0 0 5px #1e90ff; }
@@ -58,7 +62,7 @@
 <header>
     <div class="header-left">
         <img src="ảnh logo trường.png" alt="Logo">
-        <div class="brand">THCS BÌNH THẠNH - v5.4 (Firebase)</div>
+        <div class="brand">THCS BÌNH THẠNH - v5.4</div>
     </div>
     <div id="clock">00:00:00</div>
 </header>
@@ -79,7 +83,7 @@
             
             <div id="at-panel">
                 <button class="btn" onclick="exportCSV()">XUẤT BÁO CÁO (CSV)</button>
-                <button class="btn btn-school-info" onclick="window.open('http://thcsbinhthanh.pgdtphongngu.edu.vn', '_blank')">VỀ TRƯỜNG</button>
+                <a href="http://thcsbinhthanh.pgdtphongngu.edu.vn" target="_blank" class="btn btn-school-info">VỀ TRƯỜNG</a>
             </div>
 
             <div id="re-panel" style="display:none">
@@ -112,6 +116,9 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // Định danh máy này để hiện lên trang QUẢN LÝ
+    const DEVICE_ID = "Máy quét của Huy"; 
+
     const video = document.getElementById('video');
     const status = document.getElementById('status');
     const canvas = document.getElementById('overlay');
@@ -130,11 +137,11 @@
                 faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                 faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
             ]);
-            loadDataFromCloud(); // Tải từ Firebase thay vì LocalStorage
+            loadDataFromCloud();
             await startCamera();
+            reportPresence(); // Khai báo online ngay khi bật
             status.innerText = "HỆ THỐNG SẴN SÀNG";
             startDetectionLoop();
-            updateStats();
         } catch (e) { status.innerText = "LỖI KẾT NỐI AI!"; }
     }
 
@@ -177,34 +184,23 @@
     async function registerFace() {
         const nameInput = document.getElementById('nameInput');
         const name = nameInput.value.trim();
-        let hasError = false;
-
         if (!name) {
             status.innerText = "BẠN ƠI, CHƯA NHẬP TÊN KÌA!";
-            status.style.background = "#ffebeb";
-            hasError = true;
-        } else {
-            isProcessing = true;
-            clearInterval(detectionInterval); 
-            status.innerText = "ĐANG CHỤP ẢNH...";
-            try {
-                const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
-                    .withFaceLandmarks().withFaceDescriptor();
-                if (d) {
-                    saveToCloud(name, d.descriptor); // Lưu lên Firebase
-                    alert("Đã lưu thành công cho bạn!");
-                    nameInput.value = "";
-                } else { alert("Không thấy mặt bạn ơi!"); }
-            } catch (e) { console.error(e); }
+            return;
         }
-
-        if (video.srcObject) { video.srcObject.getTracks().forEach(track => track.stop()); }
-        await new Promise(r => setTimeout(r, 55)); 
-        await startCamera();
+        isProcessing = true;
+        status.innerText = "ĐANG CHỤP ẢNH...";
+        const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 })).withFaceLandmarks().withFaceDescriptor();
+        if (d) {
+            saveToCloud(name, d.descriptor);
+            alert("Đã lưu thành công cho bạn!");
+            nameInput.value = "";
+        } else { alert("Không thấy mặt bạn ơi!"); }
         
+        if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+        await startCamera();
         isProcessing = false;
         status.innerText = "HỆ THỐNG SẴN SÀNG";
-        status.style.background = "";
         startDetectionLoop();
     }
 
@@ -224,28 +220,15 @@
         const total = labeledDescriptors.length;
         const present = logs.filter((l, index) => index > 0 && l[1] === date).length;
         const late = logs.filter((l, index) => index > 0 && l[1] === date && l[2] > LATE_TIME).length;
-
         document.getElementById('total-students').innerText = total;
         document.getElementById('present-students').innerText = present;
         document.getElementById('late-students').innerText = late;
     }
 
-    function clearData() {
-        if(confirm("Bạn ơi, bạn chắc chắn muốn xóa hết dữ liệu trên CLOUD không?")) {
-            db.ref('school_data').remove();
-            alert("Đã xóa xong!");
-            location.reload();
-        }
-    }
-
-    // HÀM ĐỒNG BỘ VỚI CLOUD
     function saveToCloud(name, descriptor) {
         db.ref('school_data').once('value', snapshot => {
             const data = snapshot.val() || [];
-            data.push({
-                label: name,
-                descriptors: [Array.from(descriptor)]
-            });
+            data.push({ label: name, descriptors: [Array.from(descriptor)] });
             db.ref('school_data').set(data);
         });
     }
@@ -254,14 +237,25 @@
         db.ref('school_data').on('value', snapshot => {
             const data = snapshot.val();
             if (data) {
-                labeledDescriptors = data.map(d => 
-                    new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc)))
-                );
+                labeledDescriptors = data.map(d => new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc))));
                 updateStats();
-            } else {
-                labeledDescriptors = [];
             }
         });
+    }
+
+    // HÀM QUAN TRỌNG: Báo cáo Online cho trang Quản lý
+    function reportPresence() {
+        const ref = db.ref('active_devices/' + DEVICE_ID.replace(/\s/g, '_'));
+        ref.set({ name: DEVICE_ID, lastSeen: new Date().toLocaleTimeString('vi-VN') });
+        ref.onDisconnect().remove();
+    }
+    setInterval(reportPresence, 45000); // Cập nhật mỗi 45 giây
+
+    function clearData() {
+        if(confirm("Bạn ơi, xóa sạch dữ liệu trên Cloud nhé?")) {
+            db.ref('school_data').remove();
+            location.reload();
+        }
     }
 
     function switchTab(mode) {
@@ -280,10 +274,7 @@
         link.click();
     }
 
-    setInterval(() => {
-        document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN');
-    }, 1000);
-
+    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN'); }, 1000);
     init();
 </script>
 </body>
