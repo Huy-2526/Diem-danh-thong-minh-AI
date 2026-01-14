@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI Attendance v5.4 - THCS Bình Thạnh</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <style>
         :root { --navy: #0c2461; --green: #00ff00; --red: #ff3b30; --blue-school: #1e90ff; }
         body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; touch-action: manipulation; }
@@ -13,35 +17,10 @@
         .header-left img { height: 40px; }
         .header-left .brand { font-weight: 800; color: var(--navy); font-size: 1rem; }
         
-        .main-content { 
-            display: flex; 
-            flex-direction: column; 
-            max-width: 1200px; 
-            margin: 10px auto; 
-            padding: 0 10px; 
-            gap: 15px; 
-        }
+        .main-content { display: flex; flex-direction: column; max-width: 1200px; margin: 10px auto; padding: 0 10px; gap: 15px; }
+        @media (min-width: 768px) { .main-content { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; padding: 20px; } }
 
-        @media (min-width: 768px) {
-            .main-content {
-                display: grid;
-                grid-template-columns: 1.2fr 0.8fr;
-                gap: 20px;
-                padding: 20px;
-            }
-        }
-
-        .camera-container { 
-            background: #000; 
-            border-radius: 15px; 
-            position: relative; 
-            aspect-ratio: 4/3; 
-            overflow: hidden; 
-            border: 3px solid white; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
-            width: 100%;
-        }
-
+        .camera-container { background: #000; border-radius: 15px; position: relative; aspect-ratio: 4/3; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 100%; }
         video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         
         .control-panel { display: flex; flex-direction: column; gap: 15px; }
@@ -56,17 +35,7 @@
         .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; margin-bottom: 10px; -webkit-tap-highlight-color: transparent; transition: 0.3s; }
         .btn-red { background: var(--red); }
         
-        .btn-school-info { 
-            background: #0c2461 !important;
-            color: white !important;
-            border: 2px solid #00ffff !important; 
-            box-shadow: 0 0 10px #1e90ff !important;
-            animation: blink-animation 1.5s infinite !important;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
+        .btn-school-info { background: #0c2461 !important; color: white !important; border: 2px solid #00ffff !important; box-shadow: 0 0 10px #1e90ff !important; animation: blink-animation 1.5s infinite !important; display: flex; justify-content: center; align-items: center; gap: 8px; }
 
         @keyframes blink-animation {
             0% { background-color: #0c2461; box-shadow: 0 0 5px #1e90ff; }
@@ -74,7 +43,6 @@
             100% { background-color: #0c2461; box-shadow: 0 0 5px #1e90ff; }
         }
 
-        /* CSS MỚI CHO PHẦN THỐNG KÊ */
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
         .stat-box { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
         .stat-box span { display: block; font-size: 0.7rem; font-weight: 700; color: #666; text-transform: uppercase; }
@@ -90,7 +58,7 @@
 <header>
     <div class="header-left">
         <img src="ảnh logo trường.png" alt="Logo">
-        <div class="brand">THCS BÌNH THẠNH - v5.4</div>
+        <div class="brand">THCS BÌNH THẠNH - v5.4 (Firebase)</div>
     </div>
     <div id="clock">00:00:00</div>
 </header>
@@ -111,9 +79,7 @@
             
             <div id="at-panel">
                 <button class="btn" onclick="exportCSV()">XUẤT BÁO CÁO (CSV)</button>
-                <button class="btn btn-school-info" onclick="window.open('http://thcsbinhthanh.pgdtphongngu.edu.vn', '_blank')">
-                 VỀ TRƯỜNG
-                </button>
+                <button class="btn btn-school-info" onclick="window.open('http://thcsbinhthanh.pgdtphongngu.edu.vn', '_blank')">VỀ TRƯỜNG</button>
             </div>
 
             <div id="re-panel" style="display:none">
@@ -137,6 +103,15 @@
 </div>
 
 <script>
+    // --- FIREBASE CONFIG ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCRlm5nRrp3DTXV-XJITup3xEHAc5re7oU",
+        databaseURL: "https://diemdanhthcsbt-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "diemdanhthcsbt",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     const video = document.getElementById('video');
     const status = document.getElementById('status');
     const canvas = document.getElementById('overlay');
@@ -145,7 +120,6 @@
     let isProcessing = false;
     let detectionInterval;
 
-    // QUY ĐỊNH GIỜ ĐI TRỄ (Ví dụ sau 07:30:00 là trễ)
     const LATE_TIME = "07:30:00";
 
     async function init() {
@@ -156,11 +130,11 @@
                 faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                 faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
             ]);
-            loadData();
+            loadDataFromCloud(); // Tải từ Firebase thay vì LocalStorage
             await startCamera();
             status.innerText = "HỆ THỐNG SẴN SÀNG";
             startDetectionLoop();
-            updateStats(); // Cập nhật sĩ số lúc đầu
+            updateStats();
         } catch (e) { status.innerText = "LỖI KẾT NỐI AI!"; }
     }
 
@@ -217,53 +191,38 @@
                 const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 }))
                     .withFaceLandmarks().withFaceDescriptor();
                 if (d) {
-                    labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(name, [d.descriptor]));
-                    saveData();
-                    updateStats(); // Cập nhật sĩ số sau khi đăng ký mới
+                    saveToCloud(name, d.descriptor); // Lưu lên Firebase
                     alert("Đã lưu thành công cho bạn!");
                     nameInput.value = "";
                 } else { alert("Không thấy mặt bạn ơi!"); }
             } catch (e) { console.error(e); }
         }
 
-        if (video.srcObject) {
-            video.srcObject.getTracks().forEach(track => track.stop());
-        }
+        if (video.srcObject) { video.srcObject.getTracks().forEach(track => track.stop()); }
         await new Promise(r => setTimeout(r, 55)); 
         await startCamera();
         
         isProcessing = false;
-        if (!hasError) {
-            status.innerText = "HỆ THỐNG SẴN SÀNG";
-            status.style.background = "";
-            startDetectionLoop();
-        } else {
-            setTimeout(() => {
-                status.innerText = "HỆ THỐNG SẴN SÀNG";
-                status.style.background = "";
-                startDetectionLoop();
-            }, 2000);
-        }
+        status.innerText = "HỆ THỐNG SẴN SÀNG";
+        status.style.background = "";
+        startDetectionLoop();
     }
 
     function addLog(name) {
         const date = new Date().toLocaleDateString('vi-VN');
         const time = new Date().toLocaleTimeString('vi-VN');
-        // Kiểm tra xem hôm nay người này đã điểm danh chưa
         if (!logs.some(l => l[0] === name && l[1] === date)) {
             logs.push([name, date, time]);
             const list = document.getElementById('logList');
             list.innerHTML = `<div class="log-item"><b>${name}</b> <span>${time}</span></div>` + list.innerHTML;
-            updateStats(); // Cập nhật hiện diện và đi trễ
+            updateStats();
         }
     }
 
     function updateStats() {
         const date = new Date().toLocaleDateString('vi-VN');
         const total = labeledDescriptors.length;
-        // Đếm số người trong logs có ngày là hôm nay (trừ dòng header)
         const present = logs.filter((l, index) => index > 0 && l[1] === date).length;
-        // Đếm số người đi trễ (so sánh chuỗi giờ)
         const late = logs.filter((l, index) => index > 0 && l[1] === date && l[2] > LATE_TIME).length;
 
         document.getElementById('total-students').innerText = total;
@@ -272,28 +231,37 @@
     }
 
     function clearData() {
-        if(confirm("Bạn ơi, bạn chắc chắn muốn xóa hết dữ liệu không?")) {
-            localStorage.removeItem('db_flash_v5');
-            labeledDescriptors = [];
+        if(confirm("Bạn ơi, bạn chắc chắn muốn xóa hết dữ liệu trên CLOUD không?")) {
+            db.ref('school_data').remove();
             alert("Đã xóa xong!");
             location.reload();
         }
     }
 
-    function saveData() {
-        const data = labeledDescriptors.map(ld => ({
-            label: ld.label, descriptors: ld.descriptors.map(d => Array.from(d))
-        }));
-        localStorage.setItem('db_flash_v5', JSON.stringify(data));
+    // HÀM ĐỒNG BỘ VỚI CLOUD
+    function saveToCloud(name, descriptor) {
+        db.ref('school_data').once('value', snapshot => {
+            const data = snapshot.val() || [];
+            data.push({
+                label: name,
+                descriptors: [Array.from(descriptor)]
+            });
+            db.ref('school_data').set(data);
+        });
     }
 
-    function loadData() {
-        const data = localStorage.getItem('db_flash_v5');
-        if (data) {
-            labeledDescriptors = JSON.parse(data).map(d => 
-                new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc)))
-            );
-        }
+    function loadDataFromCloud() {
+        db.ref('school_data').on('value', snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                labeledDescriptors = data.map(d => 
+                    new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc)))
+                );
+                updateStats();
+            } else {
+                labeledDescriptors = [];
+            }
+        });
     }
 
     function switchTab(mode) {
