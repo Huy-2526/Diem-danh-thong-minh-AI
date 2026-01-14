@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI Attendance v5.4 - THCS Bình Thạnh</title>
-    
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
     <style>
         :root { --navy: #0c2461; --green: #00ff00; --red: #ff3b30; --blue-school: #1e90ff; }
         body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; touch-action: manipulation; }
@@ -16,63 +14,36 @@
         .header-left { display: flex; align-items: center; gap: 10px; }
         .header-left img { height: 40px; }
         .header-left .brand { font-weight: 800; color: var(--navy); font-size: 1rem; }
-        
         .main-content { display: flex; flex-direction: column; max-width: 1200px; margin: 10px auto; padding: 0 10px; gap: 15px; }
         @media (min-width: 768px) { .main-content { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; padding: 20px; } }
-
         .camera-container { background: #000; border-radius: 15px; position: relative; aspect-ratio: 4/3; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 100%; }
         video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-        
-        .control-panel { display: flex; flex-direction: column; gap: 15px; }
         .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .status-header { background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center; font-weight: 800; color: var(--navy); border-left: 4px solid var(--navy); margin-bottom: 12px; font-size: 0.9rem; transition: 0.3s; }
-        
+        .status-header { background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center; font-weight: 800; color: var(--navy); border-left: 4px solid var(--navy); margin-bottom: 12px; font-size: 0.9rem; }
         .tab-menu { display: flex; background: #eee; border-radius: 8px; padding: 4px; margin-bottom: 12px; }
         .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: 600; border-radius: 6px; font-size: 0.85rem; color: #666; }
         .tab.active { background: white; color: var(--navy); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        
-        input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; margin-bottom: 10px; -webkit-tap-highlight-color: transparent; transition: 0.3s; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; margin-bottom: 10px; }
         .btn-red { background: var(--red); }
-        
-        .btn-school-info { 
-            background: #0c2461 !important; color: white !important; border: 2px solid #00ffff !important; 
-            box-shadow: 0 0 10px #1e90ff !important; animation: blink-animation 1.5s infinite !important; 
-            display: flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none;
-        }
-
-        @keyframes blink-animation {
-            0% { background-color: #0c2461; box-shadow: 0 0 5px #1e90ff; }
-            50% { background-color: #007bff; box-shadow: 0 0 25px #00ffff, 0 0 40px #00ffff; transform: scale(1.05); }
-            100% { background-color: #0c2461; box-shadow: 0 0 5px #1e90ff; }
-        }
-
+        .btn-school-info { background: #0c2461 !important; color: white !important; border: 2px solid #00ffff !important; box-shadow: 0 0 10px #1e90ff !important; animation: blink-animation 1.5s infinite !important; display: flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none; }
+        @keyframes blink-animation { 0% { background-color: #0c2461; } 50% { background-color: #007bff; transform: scale(1.02); } 100% { background-color: #0c2461; } }
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
-        .stat-box { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
-        .stat-box span { display: block; font-size: 0.7rem; font-weight: 700; color: #666; text-transform: uppercase; }
+        .stat-box { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+        .stat-box span { display: block; font-size: 0.7rem; font-weight: 700; color: #666; }
         .stat-box div { font-size: 1.2rem; font-weight: 800; color: var(--navy); }
-
         .log-container { max-height: 300px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #eee; }
         .log-item { padding: 10px 0; border-bottom: 1px solid #f9f9f9; display: flex; justify-content: space-between; font-size: 0.9rem; }
         #clock { font-weight: bold; font-size: 0.8rem; }
     </style>
 </head>
 <body>
-
 <header>
-    <div class="header-left">
-        <img src="ảnh logo trường.png" alt="Logo">
-        <div class="brand">THCS BÌNH THẠNH - v5.4</div>
-    </div>
+    <div class="header-left"><img src="ảnh logo trường.png" alt="Logo"><div class="brand">THCS BÌNH THẠNH - v5.4</div></div>
     <div id="clock">00:00:00</div>
 </header>
-
 <div class="main-content">
-    <div class="camera-container">
-        <video id="video" autoplay muted playsinline></video>
-        <canvas id="overlay"></canvas>
-    </div>
-
+    <div class="camera-container"><video id="video" autoplay muted playsinline></video><canvas id="overlay"></canvas></div>
     <div class="control-panel">
         <div class="card">
             <div id="status" class="status-header">HỆ THỐNG ĐANG TẢI...</div>
@@ -80,26 +51,22 @@
                 <div class="tab active" id="tab-at" onclick="switchTab('at')">ĐIỂM DANH</div>
                 <div class="tab" id="tab-re" onclick="switchTab('re')">ĐĂNG KÝ</div>
             </div>
-            
             <div id="at-panel">
                 <button class="btn" onclick="exportCSV()">XUẤT BÁO CÁO (CSV)</button>
                 <a href="http://thcsbinhthanh.pgdtphongngu.edu.vn" target="_blank" class="btn btn-school-info">VỀ TRƯỜNG</a>
             </div>
-
             <div id="re-panel" style="display:none">
                 <input type="text" id="nameInput" placeholder="Nhập tên học sinh..." autocomplete="off">
                 <button class="btn" onclick="registerFace()">CHỤP ẢNH ĐĂNG KÝ</button>
                 <button class="btn btn-red" onclick="clearData()">XÓA TẤT CẢ DỮ LIỆU</button>
             </div>
         </div>
-
         <div class="card">
             <div class="stats-grid">
                 <div class="stat-box"><span>Sĩ số</span><div id="total-students">0</div></div>
                 <div class="stat-box"><span>Hiện diện</span><div id="present-students">0</div></div>
                 <div class="stat-box"><span>Đi trễ</span><div id="late-students">0</div></div>
             </div>
-            
             <div style="font-weight: 800; color: var(--navy); font-size: 0.85rem;">NHẬT KÝ ĐIỂM DANH</div>
             <div id="logList" class="log-container"></div>
         </div>
@@ -107,7 +74,6 @@
 </div>
 
 <script>
-    // --- FIREBASE CONFIG ---
     const firebaseConfig = {
         apiKey: "AIzaSyCRlm5nRrp3DTXV-XJITup3xEHAc5re7oU",
         databaseURL: "https://diemdanhthcsbt-default-rtdb.asia-southeast1.firebasedatabase.app/",
@@ -116,8 +82,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Định danh máy này để hiện lên trang QUẢN LÝ
-    const DEVICE_ID = "Máy quét của Huy"; 
+    // TÊN MÁY NÀY (Huy có thể đổi tùy ý)
+    const MY_DEVICE_NAME = "MÁY QUÉT CỦA HUY";
 
     const video = document.getElementById('video');
     const status = document.getElementById('status');
@@ -126,8 +92,6 @@
     let logs = [["Tên Học Sinh", "Ngày", "Giờ"]];
     let isProcessing = false;
     let detectionInterval;
-
-    const LATE_TIME = "07:30:00";
 
     async function init() {
         const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
@@ -139,16 +103,27 @@
             ]);
             loadDataFromCloud();
             await startCamera();
-            reportPresence(); // Khai báo online ngay khi bật
+            reportPresence(); // Gửi tín hiệu online
             status.innerText = "HỆ THỐNG SẴN SÀNG";
             startDetectionLoop();
         } catch (e) { status.innerText = "LỖI KẾT NỐI AI!"; }
     }
 
-    async function startCamera() {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "user", width: 320, height: 240 } 
+    // HÀM QUAN TRỌNG: Gửi tín hiệu để trang QUẢN LÝ nhìn thấy
+    function reportPresence() {
+        // Trang Quản lý của Huy quét thư mục 'DiemDanh_Status'
+        const ref = db.ref('DiemDanh_Status/' + MY_DEVICE_NAME.replace(/\s/g, '_'));
+        ref.set({
+            name: MY_DEVICE_NAME,
+            lastSeen: new Date().toLocaleTimeString('vi-VN'),
+            status: "Online"
         });
+        ref.onDisconnect().remove(); // Tự xóa khi tắt web
+    }
+    setInterval(reportPresence, 30000); // Cập nhật mỗi 30 giây
+
+    async function startCamera() {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 320, height: 240 } });
         video.srcObject = stream;
         return new Promise(resolve => video.onloadedmetadata = resolve);
     }
@@ -159,44 +134,42 @@
             if (isProcessing) return;
             const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 128 }))
                 .withFaceLandmarks().withFaceDescriptors();
-            
             const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
             faceapi.matchDimensions(canvas, displaySize);
             const resized = faceapi.resizeResults(detections, displaySize);
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
             if (labeledDescriptors.length > 0) {
                 const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.54);
                 resized.forEach(d => {
                     const best = matcher.findBestMatch(d.descriptor);
-                    const color = best.label !== 'unknown' ? '#00ff00' : '#ff3b30';
-                    if (best.label !== 'unknown') addLog(best.label);
-                    new faceapi.draw.DrawBox(d.detection.box, { 
-                        label: best.label === 'unknown' ? 'NGƯỜI LẠ' : best.label, 
-                        boxColor: color 
-                    }).draw(canvas);
+                    if (best.label !== 'unknown') {
+                        addLog(best.label);
+                        new faceapi.draw.DrawBox(d.detection.box, { label: best.label, boxColor: '#00ff00' }).draw(canvas);
+                    } else {
+                        new faceapi.draw.DrawBox(d.detection.box, { label: 'NGƯỜI LẠ', boxColor: '#ff3b30' }).draw(canvas);
+                    }
                 });
             }
-        }, 500);
+        }, 600);
     }
 
     async function registerFace() {
         const nameInput = document.getElementById('nameInput');
         const name = nameInput.value.trim();
-        if (!name) {
-            status.innerText = "BẠN ƠI, CHƯA NHẬP TÊN KÌA!";
-            return;
-        }
+        if (!name) { alert("Bạn ơi nhập tên đã!"); return; }
         isProcessing = true;
-        status.innerText = "ĐANG CHỤP ẢNH...";
+        status.innerText = "ĐANG CHỤP...";
         const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160 })).withFaceLandmarks().withFaceDescriptor();
         if (d) {
-            saveToCloud(name, d.descriptor);
-            alert("Đã lưu thành công cho bạn!");
+            db.ref('school_data').once('value', snapshot => {
+                const data = snapshot.val() || [];
+                data.push({ label: name, descriptors: [Array.from(d.descriptor)] });
+                db.ref('school_data').set(data);
+            });
+            alert("Xong rồi bạn ơi!");
             nameInput.value = "";
-        } else { alert("Không thấy mặt bạn ơi!"); }
-        
+        } else { alert("Không thấy mặt!"); }
         if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
         await startCamera();
         isProcessing = false;
@@ -217,20 +190,9 @@
 
     function updateStats() {
         const date = new Date().toLocaleDateString('vi-VN');
-        const total = labeledDescriptors.length;
-        const present = logs.filter((l, index) => index > 0 && l[1] === date).length;
-        const late = logs.filter((l, index) => index > 0 && l[1] === date && l[2] > LATE_TIME).length;
-        document.getElementById('total-students').innerText = total;
+        const present = logs.filter((l, idx) => idx > 0 && l[1] === date).length;
+        document.getElementById('total-students').innerText = labeledDescriptors.length;
         document.getElementById('present-students').innerText = present;
-        document.getElementById('late-students').innerText = late;
-    }
-
-    function saveToCloud(name, descriptor) {
-        db.ref('school_data').once('value', snapshot => {
-            const data = snapshot.val() || [];
-            data.push({ label: name, descriptors: [Array.from(descriptor)] });
-            db.ref('school_data').set(data);
-        });
     }
 
     function loadDataFromCloud() {
@@ -243,28 +205,13 @@
         });
     }
 
-    // HÀM QUAN TRỌNG: Báo cáo Online cho trang Quản lý
-    function reportPresence() {
-        const ref = db.ref('active_devices/' + DEVICE_ID.replace(/\s/g, '_'));
-        ref.set({ name: DEVICE_ID, lastSeen: new Date().toLocaleTimeString('vi-VN') });
-        ref.onDisconnect().remove();
-    }
-    setInterval(reportPresence, 45000); // Cập nhật mỗi 45 giây
-
-    function clearData() {
-        if(confirm("Bạn ơi, xóa sạch dữ liệu trên Cloud nhé?")) {
-            db.ref('school_data').remove();
-            location.reload();
-        }
-    }
-
+    function clearData() { if(confirm("Xóa hết dữ liệu Cloud?")) { db.ref('school_data').remove(); location.reload(); } }
     function switchTab(mode) {
         document.getElementById('at-panel').style.display = mode === 'at' ? 'block' : 'none';
         document.getElementById('re-panel').style.display = mode === 're' ? 'block' : 'none';
         document.getElementById('tab-at').className = 'tab' + (mode === 'at' ? ' active' : '');
         document.getElementById('tab-re').className = 'tab' + (mode === 're' ? ' active' : '');
     }
-
     function exportCSV() {
         let csv = "\ufeff" + logs.map(row => row.join(",")).join("\n");
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -273,7 +220,6 @@
         link.download = `BaoCao_DiemDanh.csv`;
         link.click();
     }
-
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN'); }, 1000);
     init();
 </script>
