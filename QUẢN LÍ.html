@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ADMIN MOBILE</title>
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/906/906343.png">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f4f7f9; margin: 0; padding: 0; }
+        .app-bar { background: #0c2461; color: white; padding: 20px; text-align: center; font-weight: bold; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .container { padding: 15px; }
+        .card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-item { background: #e1e8f0; padding: 15px; border-radius: 12px; text-align: center; }
+        .stat-value { font-size: 1.5rem; font-weight: 800; color: #0c2461; }
+        .device-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .dot { height: 10px; width: 10px; background-color: #28a745; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .student-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
+        .btn-del { background: #ff3b30; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; }
+        h2 { font-size: 1rem; color: #333; margin-top: 0; }
+    </style>
+</head>
+<body>
+
+<div class="app-bar">QUẢN LÝ THCS BÌNH THẠNH</div>
+
+<div class="container">
+    <div class="stat-grid">
+        <div class="card stat-item">
+            <div class="stat-value" id="count-st">0</div>
+            <small>Học sinh</small>
+        </div>
+        <div class="card stat-item">
+            <div class="stat-value" id="count-dev">0</div>
+            <small>Máy Online</small>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📱 MÁY ĐANG QUÉT</h2>
+        <div id="dev-list">Đang tìm...</div>
+    </div>
+
+    <div class="card">
+        <h2>👥 DANH SÁCH GỐC</h2>
+        <div id="st-list">Đang tải...</div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCRlm5nRrp3DTXV-XJITup3xEHAc5re7oU",
+        databaseURL: "https://diemdanhthcsbt-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "diemdanhthcsbt",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Lắng nghe máy Online
+    db.ref('active_devices').on('value', s => {
+        const devs = s.val() || {};
+        const div = document.getElementById('dev-list');
+        div.innerHTML = '';
+        let count = 0;
+        for(let k in devs) {
+            count++;
+            div.innerHTML += `<div class="device-row"><span><span class="dot"></span>${devs[k].name}</span><small>${devs[k].lastSeen}</small></div>`;
+        }
+        document.getElementById('count-dev').innerText = count;
+    });
+
+    // Lắng nghe học sinh
+    let students = [];
+    db.ref('school_data').on('value', s => {
+        students = s.val() || [];
+        const div = document.getElementById('st-list');
+        div.innerHTML = '';
+        students.forEach((item, i) => {
+            div.innerHTML += `
+                <div class="student-item">
+                    <span><b>${item.label}</b></span>
+                    <button class="btn-del" onclick="del(${i})">Xóa</button>
+                </div>`;
+        });
+        document.getElementById('count-st').innerText = students.length;
+    });
+
+    function del(i) {
+        if(confirm("Xóa học sinh này bạn ơi?")) {
+            students.splice(i, 1);
+            db.ref('school_data').set(students);
+        }
+    }
+</script>
+</body>
+</html>
