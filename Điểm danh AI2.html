@@ -161,7 +161,7 @@
         const total = document.getElementById('total-students').innerText;
         const present = document.getElementById('present-students').innerText;
 
-        db.ref('DiemDaily_Status/' + deviceID).set({
+        db.ref('DiemDanh_Status/' + deviceID).set({
             name: className.toUpperCase(),
             status: "Online",
             totalStudents: total,
