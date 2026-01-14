@@ -111,14 +111,20 @@
 
     // HÀM QUAN TRỌNG: Gửi tín hiệu để trang QUẢN LÝ nhìn thấy
     function reportPresence() {
-        // Trang Quản lý của Huy quét thư mục 'DiemDanh_Status'
-        const ref = db.ref('DiemDanh_Status/' + MY_DEVICE_NAME.replace(/\s/g, '_'));
+        // Huy chú ý: Phải có ID phía sau (ví dụ: /MAY_01) để Firebase tạo cấu trúc danh sách
+        const deviceID = "MAY_QUET_1"; 
+        const ref = db.ref('DiemDanh_Status/' + deviceID); 
+        
         ref.set({
-            name: MY_DEVICE_NAME,
-            lastSeen: new Date().toLocaleTimeString('vi-VN'),
-            status: "Online"
+            name: "MÁY LỚP CỦA HUY", // Tên này sẽ hiện lên ô trắng
+            status: "Online",        // Phải có chữ "Online" đúng từng chữ
+            lastSeen: new Date().toLocaleTimeString('vi-VN')
+        }).then(() => {
+            console.log("✅ Đã kết nối với trang Quản lý!");
         });
-        ref.onDisconnect().remove(); // Tự xóa khi tắt web
+
+        // Khi tắt web, xóa máy này khỏi danh sách online
+        ref.onDisconnect().remove();
     }
     setInterval(reportPresence, 30000); // Cập nhật mỗi 30 giây
 
