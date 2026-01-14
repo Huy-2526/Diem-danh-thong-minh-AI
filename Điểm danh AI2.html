@@ -236,19 +236,40 @@
     async function registerFace() {
         const nameInput = document.getElementById('nameInput');
         const name = nameInput.value.trim();
-        if (!name) return alert("Bạn ơi nhập tên đã!");
-        isProcessing = true;
+        
+        if (!name) return alert("Huy ơi, nhập tên học sinh trước đã!");
+        
+        isProcessing = true; // Dừng quét điểm danh để tập trung đăng ký
         status.innerText = "ĐANG CHỤP...";
-        const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-        if (d) {
-            db.ref('school_data').once('value', s => {
-                const data = s.val() || [];
-                data.push({ label: name, descriptors: [Array.from(d.descriptor)] });
-                db.ref('school_data').set(data);
-            });
-            alert("Đã lưu: " + name);
-            nameInput.value = "";
-        } else alert("Không thấy mặt!");
+
+        try {
+            const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                                  .withFaceLandmarks()
+                                  .withFaceDescriptor();
+            
+            if (d) {
+                // Lưu vào Firebase
+                await db.ref('school_data').once('value', s => {
+                    const data = s.val() || [];
+                    data.push({ label: name, descriptors: [Array.from(d.descriptor)] });
+                    db.ref('school_data').set(data);
+                });
+
+                alert("✅ Đã lưu thành công: " + name);
+                nameInput.value = "";
+                
+                // --- BÍ KÍP CHỐNG FREEZE SAU ĐĂNG KÝ ---
+                status.innerText = "ĐANG LÀM MỚI CAMERA...";
+                await startCamera(); // Restart cam ngay lập tức để giải phóng bộ nhớ
+                
+            } else {
+                alert("❌ Không thấy mặt! Huy bảo bạn đứng gần lại tí nhé.");
+            }
+        } catch (err) {
+            console.error(err);
+            await startCamera(); // Lỗi cũng restart cam luôn cho chắc
+        }
+
         isProcessing = false;
         status.innerText = "HỆ THỐNG SẴN SÀNG";
     }
