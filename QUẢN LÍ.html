@@ -61,7 +61,7 @@
     const db = firebase.database();
 
     // Lắng nghe máy Online
-    db.ref('active_devices').on('value', s => {
+    db.ref('DiemDanh_Status').on('value', s => {
         const devs = s.val() || {};
         const div = document.getElementById('dev-list');
         div.innerHTML = '';
