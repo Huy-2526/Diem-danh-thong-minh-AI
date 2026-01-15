@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Điểm danh v6.0 - THCS Bình Thạnh</title>
+    <title>Điểm danh v6.1 - THCS Bình Thạnh</title>
     
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -31,10 +31,15 @@
         .btn-red { background: var(--red); }
         .btn-school-info { background: #0c2461 !important; color: white !important; border: 2px solid #00ffff !important; box-shadow: 0 0 10px #1e90ff !important; animation: blink-animation 1.5s infinite !important; }
         @keyframes blink-animation { 0% { box-shadow: 0 0 5px #1e90ff; } 50% { box-shadow: 0 0 25px #00ffff; transform: scale(1.02); } 100% { box-shadow: 0 0 5px #1e90ff; } }
+        
+        /* Stats Grid Nâng Cấp */
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
         .stat-box { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
-        .stat-box span { display: block; font-size: 0.7rem; font-weight: 700; color: #666; }
+        .stat-box span { display: block; font-size: 0.75rem; font-weight: 700; color: #666; margin-bottom: 5px; }
         .stat-box div { font-size: 1.2rem; font-weight: 800; color: var(--navy); }
+        .stat-box.absent { border: 2px solid var(--red); background: #fff5f5; }
+        .stat-box.absent div { color: var(--red); }
+        
         .log-container { max-height: 300px; overflow-y: auto; margin-top: 10px; }
         .log-item { padding: 10px 0; border-bottom: 1px solid #f9f9f9; display: flex; justify-content: space-between; font-size: 0.9rem; }
         #clock { font-weight: bold; font-size: 0.8rem; }
@@ -81,7 +86,7 @@
             <div class="stats-grid">
                 <div class="stat-box"><span>Sĩ số</span><div id="total-students">0</div></div>
                 <div class="stat-box"><span>Hiện diện</span><div id="present-students">0</div></div>
-                <div class="stat-box"><span>Vắng</span><div id="absent-students">0</div></div>
+                <div class="stat-box absent"><span>Vắng</span><div id="absent-students">0</div></div>
             </div>
             <div id="logList" class="log-container"></div>
         </div>
@@ -114,16 +119,11 @@
                 faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
             ]);
 
-            // BƯỚC 1: HỎI TÊN LỚP
             checkClass();
-
-            // BƯỚC 2: RESTART CAMERA NGAY SAU KHI CÓ TÊN LỚP
             status.innerText = "ĐANG MỞ CAMERA...";
             await startCamera();
 
             loadDataFromCloud();
-            reportPresence();
-            
             status.innerText = "HỆ THỐNG SẴN SÀNG";
             startDetectionLoop();
             
@@ -140,7 +140,6 @@
     }
 
     async function startCamera() {
-        // Đóng luồng cũ nếu có (Restart thực thụ)
         if (video.srcObject) {
             video.srcObject.getTracks().forEach(track => track.stop());
         }
@@ -162,19 +161,18 @@
 
         const total = document.getElementById('total-students').innerText;
         const present = document.getElementById('present-students').innerText;
+        const absent = document.getElementById('absent-students').innerText;
 
         const statusData = {
             name: className.toUpperCase(),
             status: "Online",
             totalStudents: total,
             presentStudents: present,
+            absentStudents: absent, // Thêm báo cáo số vắng lên Cloud
             lastSeen: new Date().toLocaleTimeString('vi-VN')
         };
 
-        // 1. Cập nhật trạng thái hiện tại
         statusRef.set(statusData);
-
-        // 2. QUAN TRỌNG: Lệnh này bảo Firebase xóa máy này nếu mất kết nối đột ngột (rớt mạng)
         statusRef.onDisconnect().remove();
     }
 
@@ -203,7 +201,6 @@
                         });
                     }
                 } catch (err) {
-                    // Nếu cam đứng hình, restart ngầm không hỏi lại lớp
                     console.log("Cam freeze, restarting...");
                     await startCamera(); 
                 }
@@ -225,11 +222,14 @@
 
     function updateStats() {
         const date = new Date().toLocaleDateString('vi-VN');
-        const total = labeledDescriptors.length;
-        const present = logs.filter((l, i) => i > 0 && l[1] === date).length;
+        const total = labeledDescriptors.length; // Tổng sĩ số dựa trên số bạn đã đăng ký
+        const present = logs.filter((l, i) => i > 0 && l[1] === date).length; // Số bạn đã quét mặt hôm nay
+        
         document.getElementById('total-students').innerText = total;
         document.getElementById('present-students').innerText = present;
-        document.getElementById('absent-students').innerText = total - present;
+        // LOGIC CHÍNH: SĨ SỐ - HIỆN DIỆN = VẮNG
+        document.getElementById('absent-students').innerText = (total - present);
+        
         reportPresence(); 
     }
 
@@ -243,40 +243,28 @@
     async function registerFace() {
         const nameInput = document.getElementById('nameInput');
         const name = nameInput.value.trim();
-        
         if (!name) return alert("Huy ơi, nhập tên học sinh trước đã!");
         
-        isProcessing = true; // Dừng quét điểm danh để tập trung đăng ký
+        isProcessing = true;
         status.innerText = "ĐANG CHỤP...";
-
         try {
             const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
                                   .withFaceLandmarks()
                                   .withFaceDescriptor();
             
             if (d) {
-                // Lưu vào Firebase
                 await db.ref('school_data').once('value', s => {
                     const data = s.val() || [];
                     data.push({ label: name, descriptors: [Array.from(d.descriptor)] });
                     db.ref('school_data').set(data);
                 });
-
                 alert("✅ Đã lưu thành công: " + name);
                 nameInput.value = "";
-                
-                // --- BÍ KÍP CHỐNG FREEZE SAU ĐĂNG KÝ ---
-                status.innerText = "ĐANG LÀM MỚI CAMERA...";
-                await startCamera(); // Restart cam ngay lập tức để giải phóng bộ nhớ
-                
+                await startCamera(); 
             } else {
-                alert("❌ Không thấy mặt! Huy bảo bạn đứng gần lại tí nhé.");
+                alert("❌ Không thấy mặt!");
             }
-        } catch (err) {
-            console.error(err);
-            await startCamera(); // Lỗi cũng restart cam luôn cho chắc
-        }
-
+        } catch (err) { await startCamera(); }
         isProcessing = false;
         status.innerText = "HỆ THỐNG SẴN SÀNG";
     }
@@ -286,7 +274,7 @@
             const data = snapshot.val();
             if (data) {
                 labeledDescriptors = data.map(d => new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc))));
-                updateStats();
+                updateStats(); // Cập nhật ngay sĩ số và số vắng khi tải dữ liệu
             }
         });
     }
@@ -305,7 +293,7 @@
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `BaoCao.csv`;
+        link.download = `BaoCao_Lop_${localStorage.getItem('SavedClassName')}.csv`;
         link.click();
     }
 
