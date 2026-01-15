@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Quản Lý Tập Trung - THCS Bình Thạnh</title>
+    <title>Huy Admin - Quản Lý Điểm Danh</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -12,9 +12,7 @@
         :root { --navy: #0c2461; --green: #00ff00; --red: #ff3b30; --blue-school: #1e90ff; }
         body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; }
         
-        /* Giao diện Header y chang máy quét */
         header { background: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--navy); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .header-left { display: flex; align-items: center; gap: 10px; }
         .header-left .brand { font-weight: 800; color: var(--navy); font-size: 1rem; }
         
         .main-content { display: flex; flex-direction: column; max-width: 1200px; margin: 10px auto; padding: 0 10px; gap: 15px; }
@@ -27,8 +25,9 @@
         .status-header { background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center; font-weight: 800; color: var(--navy); border-left: 4px solid var(--navy); margin-bottom: 12px; }
 
         /* Item lớp học nhìn như App */
-        .class-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; }
-        .class-name { font-weight: bold; color: var(--navy); }
+        .class-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; transition: 0.3s; }
+        .class-row:hover { background: #f1f4ff; }
+        .class-name { font-weight: bold; color: var(--navy); font-size: 1rem; }
         .class-update { font-size: 0.7rem; color: #888; }
         
         .stat-val { text-align: center; font-weight: 800; font-size: 1.1rem; }
@@ -36,14 +35,12 @@
 
         .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; margin-bottom: 10px; }
         
-        /* Stats Grid y chang máy quét */
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
         .stat-box { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
         .stat-box span { display: block; font-size: 0.75rem; font-weight: 700; color: #666; }
         .stat-box div { font-size: 1.2rem; font-weight: 800; color: var(--navy); }
 
-        .status-online { display: inline-block; width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-right: 5px; animation: blink 1.5s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .status-online { display: inline-block; width: 10px; height: 10px; background: var(--green); border-radius: 50%; margin-right: 8px; box-shadow: 0 0 8px var(--green); }
         #clock { font-weight: bold; font-size: 0.9rem; color: var(--blue-school); }
     </style>
 </head>
@@ -51,16 +48,16 @@
 
 <header>
     <div class="header-left">
-        <div class="brand">THCS BÌNH THẠNH - HỆ THỐNG QUẢN LÝ</div>
+        <div class="brand">THCS BÌNH THẠNH - TRUNG TÂM ĐIỀU HÀNH</div>
     </div>
     <div id="clock">00:00:00</div>
 </header>
 
 <div class="main-content">
-    <div class="display-container" id="class-list-container">
-        <div class="status-header">DANH SÁCH MÁY ĐIỂM DANH ĐANG HOẠT ĐỘNG</div>
+    <div class="display-container">
+        <div class="status-header">MÁY QUÉT ĐANG HOẠT ĐỘNG</div>
         <div id="status-list">
-            <p style="text-align:center; color:#999; margin-top: 50px;">Đang tìm kết nối...</p>
+            <p style="text-align:center; color:#999; margin-top: 50px;">Đang tìm kết nối từ các lớp...</p>
         </div>
     </div>
 
@@ -68,24 +65,26 @@
         <div class="card">
             <div class="status-header">TỔNG HỢP TOÀN TRƯỜNG</div>
             <div class="stats-grid">
-                <div class="stat-box"><span>Tổng Lớp</span><div id="total-classes">0</div></div>
-                <div class="stat-box"><span>Hiện diện</span><div id="total-present">0</div></div>
+                <div class="stat-box"><span>Số Lớp</span><div id="total-classes">0</div></div>
+                <div class="stat-box"><span>Có mặt</span><div id="total-present">0</div></div>
                 <div class="stat-box" style="border: 2px solid var(--red);"><span>Vắng</span><div id="total-absent" style="color:var(--red);">0</div></div>
             </div>
-            <button class="btn" onclick="location.reload()">LÀM MỚI DỮ LIỆU</button>
-            <p style="font-size: 0.75rem; color: #666; text-align: center;">Dữ liệu đồng bộ trực tiếp với máy quét tại lớp.</p>
+            <button class="btn" onclick="location.reload()">LÀM MỚI HỆ THỐNG</button>
+            <p style="font-size: 0.75rem; color: #666; text-align: center;">Dữ liệu tự động cập nhật mỗi 15 giây.</p>
         </div>
 
-        <div class="card">
-            <div class="status-header">THÔNG BÁO HỆ THỐNG</div>
-            <div id="system-logs" style="font-size: 0.8rem; color: #555; max-height: 150px; overflow-y: auto;">
-                <div style="padding: 5px 0; border-bottom: 1px dashed #eee;">• Hệ thống đã sẵn sàng.</div>
+        <div class="card" style="border-top: 4px solid var(--blue-school);">
+            <div class="status-header">TRẠNG THÁI HỆ THỐNG</div>
+            <div id="system-status" style="font-size: 0.85rem; color: #444; line-height: 1.6;">
+                <div style="color: var(--green);">● Kết nối Firebase: Ổn định</div>
+                <div id="last-sync">● Đồng bộ lần cuối: --:--</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    // Cấu hình Firebase - Phải giống hệt trang điểm danh
     const firebaseConfig = {
         apiKey: "AIzaSyCRlm5nRrp3DTXV-XJITup3xEHAc5re7oU",
         databaseURL: "https://diemdanhthcsbt-default-rtdb.asia-southeast1.firebasedatabase.app/",
@@ -94,8 +93,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Lắng nghe dữ liệu từ node "DiemDanh"
-    db.ref('DiemDanh').on('value', snapshot => {
+    // Lắng nghe dữ liệu từ node "diemdaily_status"
+    db.ref('diemdaily_status').on('value', snapshot => {
         const list = document.getElementById('status-list');
         const data = snapshot.val();
         
@@ -107,26 +106,30 @@
             tClasses = devices.length;
 
             devices.forEach(d => {
-                const p = parseInt(d.presentStudents) || 0;
-                const a = parseInt(d.absentStudents) || 0;
-                tPresent += p;
-                tAbsent += a;
+                if (d) {
+                    const p = parseInt(d.presentStudents) || 0;
+                    const a = parseInt(d.absentStudents) || 0;
+                    const total = d.totalStudents || 0;
+                    tPresent += p;
+                    tAbsent += a;
 
-                const row = document.createElement('div');
-                row.className = 'class-row';
-                row.innerHTML = `
-                    <div>
-                        <div class="class-name"><span class="status-online"></span>${d.name}</div>
-                        <div class="class-update">${d.lastSeen}</div>
-                    </div>
-                    <div class="stat-val"><span class="label-min">SĨ SỐ</span>${d.totalStudents}</div>
-                    <div class="stat-val" style="color:var(--navy)"><span class="label-min">CÓ MẶT</span>${p}</div>
-                    <div class="stat-val" style="color:var(--red)"><span class="label-min">VẮNG</span>${a}</div>
-                `;
-                list.appendChild(row);
+                    const row = document.createElement('div');
+                    row.className = 'class-row';
+                    row.innerHTML = `
+                        <div>
+                            <div class="class-name"><span class="status-online"></span>${d.name || 'ẨN DANH'}</div>
+                            <div class="class-update">Cập nhật: ${d.lastSeen || '--'}</div>
+                        </div>
+                        <div class="stat-val"><span class="label-min">SĨ SỐ</span>${total}</div>
+                        <div class="stat-val" style="color:var(--navy)"><span class="label-min">CÓ MẶT</span>${p}</div>
+                        <div class="stat-val" style="color:var(--red)"><span class="label-min">VẮNG</span>${a}</div>
+                    `;
+                    list.appendChild(row);
+                }
             });
+            document.getElementById('last-sync').innerText = "● Đồng bộ lần cuối: " + new Date().toLocaleTimeString('vi-VN');
         } else {
-            list.innerHTML = '<p style="text-align:center; color:#999; margin-top: 50px;">Không có lớp nào online.</p>';
+            list.innerHTML = '<p style="text-align:center; color:#999; margin-top: 50px;">Chưa có lớp nào gửi dữ liệu.</p>';
         }
 
         document.getElementById('total-classes').innerText = tClasses;
