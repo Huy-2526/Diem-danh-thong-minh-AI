@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Máy Quét v6.0 - THCS Bình Thạnh</title>
+    <title>Điểm danh v6.0 - THCS Bình Thạnh</title>
     
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -45,7 +45,7 @@
 <header>
     <div class="header-left">
         <img src="ảnh logo trường.png" alt="Logo">
-        <div class="brand">THCS BÌNH THẠNH - MÁY QUÉT</div>
+        <div class="brand">THCS BÌNH THẠNH - ĐIỂM DANH</div>
     </div>
     <div id="clock">00:00:00</div>
 </header>
@@ -158,17 +158,24 @@
     function reportPresence() {
         const className = localStorage.getItem('SavedClassName') || "Lớp Ẩn Danh";
         const deviceID = "DEVICE_" + className.replace(/\s+/g, '_');
+        const statusRef = db.ref('DiemDanh_Status/' + deviceID);
+
         const total = document.getElementById('total-students').innerText;
         const present = document.getElementById('present-students').innerText;
 
-        db.ref('DiemDanh_Status/' + deviceID).set({
+        const statusData = {
             name: className.toUpperCase(),
             status: "Online",
             totalStudents: total,
             presentStudents: present,
             lastSeen: new Date().toLocaleTimeString('vi-VN')
-        });
-        db.ref('DiemDanh_Status/' + deviceID).onDisconnect().remove();
+        };
+
+        // 1. Cập nhật trạng thái hiện tại
+        statusRef.set(statusData);
+
+        // 2. QUAN TRỌNG: Lệnh này bảo Firebase xóa máy này nếu mất kết nối đột ngột (rớt mạng)
+        statusRef.onDisconnect().remove();
     }
 
     function startDetectionLoop() {
