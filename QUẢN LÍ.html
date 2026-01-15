@@ -2,41 +2,86 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Quản Lý Tập Trung - THCS Bình Thạnh</title>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <style>
-        :root { --navy: #0c2461; --green: #28a745; --red: #ff3b30; --light: #f4f7f6; }
-        body { font-family: sans-serif; background: var(--light); padding: 20px; margin: 0; }
-        .admin-container { max-width: 900px; margin: 0 auto; }
-        header { background: white; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-left: 8px solid var(--navy); margin-bottom: 20px; }
-        .device-item { 
-            display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; align-items: center; 
-            padding: 20px; background: white; border-radius: 12px; margin-bottom: 12px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd;
-        }
-        .class-name { font-weight: bold; color: var(--navy); font-size: 1.2rem; }
-        .update-time { font-size: 0.8rem; color: #888; }
-        .stat-box { text-align: center; }
-        .stat-label { font-size: 0.7rem; color: #666; display: block; }
-        .stat-val { font-size: 1.3rem; font-weight: bold; }
-        .online-dot { width: 10px; height: 10px; background: var(--green); border-radius: 50%; display: inline-block; margin-right: 8px; }
+        :root { --navy: #0c2461; --green: #00ff00; --red: #ff3b30; --blue-school: #1e90ff; }
+        body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; }
+        
+        /* Giao diện Header y chang máy quét */
+        header { background: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--navy); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .header-left .brand { font-weight: 800; color: var(--navy); font-size: 1rem; }
+        
+        .main-content { display: flex; flex-direction: column; max-width: 1200px; margin: 10px auto; padding: 0 10px; gap: 15px; }
+        @media (min-width: 768px) { .main-content { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; padding: 20px; } }
+
+        /* Khung hiển thị danh sách lớp (Thay cho khung Camera) */
+        .display-container { background: #fff; border-radius: 15px; position: relative; aspect-ratio: 4/3; overflow-y: auto; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); padding: 15px; }
+        
+        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; }
+        .status-header { background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center; font-weight: 800; color: var(--navy); border-left: 4px solid var(--navy); margin-bottom: 12px; }
+
+        /* Item lớp học nhìn như App */
+        .class-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; }
+        .class-name { font-weight: bold; color: var(--navy); }
+        .class-update { font-size: 0.7rem; color: #888; }
+        
+        .stat-val { text-align: center; font-weight: 800; font-size: 1.1rem; }
+        .label-min { display: block; font-size: 0.6rem; color: #666; text-transform: uppercase; }
+
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; margin-bottom: 10px; }
+        
+        /* Stats Grid y chang máy quét */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+        .stat-box { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
+        .stat-box span { display: block; font-size: 0.75rem; font-weight: 700; color: #666; }
+        .stat-box div { font-size: 1.2rem; font-weight: 800; color: var(--navy); }
+
+        .status-online { display: inline-block; width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-right: 5px; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        #clock { font-weight: bold; font-size: 0.9rem; color: var(--blue-school); }
     </style>
 </head>
 <body>
 
-<div class="admin-container">
-    <header>
-        <div>
-            <h1 style="margin:0; font-size: 1.5rem; color: var(--navy);">GIÁM SÁT ĐIỂM DANH</h1>
-            <div id="device-count">0 Lớp Đang Mở</div>
-        </div>
-        <div id="live-clock" style="font-weight:bold;">00:00:00</div>
-    </header>
+<header>
+    <div class="header-left">
+        <div class="brand">THCS BÌNH THẠNH - HỆ THỐNG LÝ</div>
+    </div>
+    <div id="clock">00:00:00</div>
+</header>
 
-    <div id="status-list">
-        <p style="text-align:center; color:#999;">Đang chờ dữ liệu từ các lớp...</p>
+<div class="main-content">
+    <div class="display-container" id="class-list-container">
+        <div class="status-header">DANH SÁCH MÁY ĐIỂM DANH ĐANG HOẠT ĐỘNG</div>
+        <div id="status-list">
+            <p style="text-align:center; color:#999; margin-top: 50px;">Đang tìm kết nối...</p>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <div class="card">
+            <div class="status-header">TỔNG HỢP TOÀN TRƯỜNG</div>
+            <div class="stats-grid">
+                <div class="stat-box"><span>Tổng Lớp</span><div id="total-classes">0</div></div>
+                <div class="stat-box"><span>Hiện diện</span><div id="total-present">0</div></div>
+                <div class="stat-box" style="border: 2px solid var(--red);"><span>Vắng</span><div id="total-absent" style="color:var(--red);">0</div></div>
+            </div>
+            <button class="btn" onclick="location.reload()">LÀM MỚI DỮ LIỆU</button>
+            <p style="font-size: 0.75rem; color: #666; text-align: center;">Dữ liệu đồng bộ trực tiếp với máy quét tại lớp.</p>
+        </div>
+
+        <div class="card">
+            <div class="status-header">THÔNG BÁO HỆ THỐNG</div>
+            <div id="system-logs" style="font-size: 0.8rem; color: #555; max-height: 150px; overflow-y: auto;">
+                <div style="padding: 5px 0; border-bottom: 1px dashed #eee;">• Hệ thống đã sẵn sàng.</div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -49,37 +94,47 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // LẮNG NGHE NODE "DiemDanh"
+    // Lắng nghe dữ liệu từ node "DiemDanh"
     db.ref('DiemDanh').on('value', snapshot => {
         const list = document.getElementById('status-list');
-        const count = document.getElementById('device-count');
-        list.innerHTML = '';
         const data = snapshot.val();
         
+        let tClasses = 0, tPresent = 0, tAbsent = 0;
+        list.innerHTML = '';
+
         if (data) {
             const devices = Object.values(data);
-            count.innerText = devices.length + " Lớp Đang Mở";
+            tClasses = devices.length;
+
             devices.forEach(d => {
+                const p = parseInt(d.presentStudents) || 0;
+                const a = parseInt(d.absentStudents) || 0;
+                tPresent += p;
+                tAbsent += a;
+
                 const row = document.createElement('div');
-                row.className = 'device-item';
+                row.className = 'class-row';
                 row.innerHTML = `
                     <div>
-                        <div class="class-name"><span class="online-dot"></span>${d.name}</div>
-                        <div class="update-time">Cập nhật: ${d.lastSeen}</div>
+                        <div class="class-name"><span class="status-online"></span>${d.name}</div>
+                        <div class="class-update">${d.lastSeen}</div>
                     </div>
-                    <div class="stat-box"><span class="stat-label">SĨ SỐ</span><span class="stat-val">${d.totalStudents}</span></div>
-                    <div class="stat-box"><span class="stat-label">CÓ MẶT</span><span class="stat-val" style="color:var(--green)">${d.presentStudents}</span></div>
-                    <div class="stat-box"><span class="stat-label">VẮNG</span><span class="stat-val" style="color:var(--red)">${d.absentStudents}</span></div>
+                    <div class="stat-val"><span class="label-min">SĨ SỐ</span>${d.totalStudents}</div>
+                    <div class="stat-val" style="color:var(--navy)"><span class="label-min">CÓ MẶT</span>${p}</div>
+                    <div class="stat-val" style="color:var(--red)"><span class="label-min">VẮNG</span>${a}</div>
                 `;
                 list.appendChild(row);
             });
         } else {
-            count.innerText = "0 Lớp Đang Mở";
-            list.innerHTML = '<p style="text-align:center; color:#999;">Không có lớp nào online.</p>';
+            list.innerHTML = '<p style="text-align:center; color:#999; margin-top: 50px;">Không có lớp nào online.</p>';
         }
+
+        document.getElementById('total-classes').innerText = tClasses;
+        document.getElementById('total-present').innerText = tPresent;
+        document.getElementById('total-absent').innerText = tAbsent;
     });
 
-    setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('vi-VN'); }, 1000);
+    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN'); }, 1000);
 </script>
 </body>
 </html>
