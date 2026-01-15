@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Điểm danh v6.2 - THCS Bình Thạnh</title>
+    <title>Điểm danh v6.3 - THCS Bình Thạnh</title>
     
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -11,19 +11,17 @@
 
     <style>
         :root { --navy: #0c2461; --green: #00ff00; --red: #ff3b30; --blue-school: #1e90ff; }
-        body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; }
+        body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; touch-action: manipulation; }
         header { background: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--navy); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .header-left { display: flex; align-items: center; gap: 10px; }
-        .header-left img { height: 40px; }
         .header-left .brand { font-weight: 800; color: var(--navy); font-size: 1rem; }
         .main-content { display: flex; flex-direction: column; max-width: 1200px; margin: 10px auto; padding: 0 10px; gap: 15px; }
         @media (min-width: 768px) { .main-content { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; padding: 20px; } }
-        .camera-container { background: #000; border-radius: 15px; position: relative; aspect-ratio: 4/3; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .camera-container { background: #000; border-radius: 15px; position: relative; aspect-ratio: 4/3; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 100%; }
         video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; }
-        .status-header { background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center; font-weight: 800; color: var(--navy); border-left: 4px solid var(--navy); margin-bottom: 12px; }
+        .status-header { background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center; font-weight: 800; color: var(--navy); border-left: 4px solid var(--navy); margin-bottom: 12px; font-size: 0.9rem; }
         .tab-menu { display: flex; background: #eee; border-radius: 8px; padding: 4px; margin-bottom: 12px; }
-        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: 600; border-radius: 6px; color: #666; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: 600; border-radius: 6px; font-size: 0.85rem; color: #666; }
         .tab.active { background: white; color: var(--navy); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         input { width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
         .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; background: var(--navy); color: white; margin-bottom: 10px; }
@@ -32,19 +30,14 @@
         .stat-box { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
         .stat-box span { display: block; font-size: 0.75rem; font-weight: 700; color: #666; }
         .stat-box div { font-size: 1.2rem; font-weight: 800; color: var(--navy); }
-        .absent-list-title { font-size: 0.85rem; font-weight: 800; color: var(--red); margin: 15px 0 8px 0; border-bottom: 2px solid #ffebeb; padding-bottom: 5px; }
-        .absent-names { display: flex; flex-wrap: wrap; gap: 5px; max-height: 150px; overflow-y: auto; }
-        .name-tag { background: #ffebeb; color: #d63031; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid #ffcccc; }
-        .log-container { max-height: 200px; overflow-y: auto; margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px; }
-        #clock { font-weight: bold; }
+        .name-tag { background: #ffebeb; color: #d63031; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; margin: 2px; border: 1px solid #ffcccc; }
+        #clock { font-weight: bold; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="header-left">
-        <div class="brand">THCS BÌNH THẠNH - MÁY QUÉT</div>
-    </div>
+    <div class="header-left"><div class="brand">THCS BÌNH THẠNH - MÁY QUÉT v6.3</div></div>
     <div id="clock">00:00:00</div>
 </header>
 
@@ -56,33 +49,33 @@
 
     <div class="control-panel">
         <div class="card">
-            <div id="status" class="status-header">KHỞI ĐỘNG...</div>
+            <div id="status" class="status-header">KHỞI ĐỘNG HỆ THỐNG...</div>
             <div class="tab-menu">
                 <div class="tab active" id="tab-at" onclick="switchTab('at')">ĐIỂM DANH</div>
                 <div class="tab" id="tab-re" onclick="switchTab('re')">ĐĂNG KÝ</div>
             </div>
             
             <div id="at-panel">
-                <button class="btn" onclick="exportCSV()">XUẤT BÁO CÁO</button>
+                <button class="btn" onclick="exportCSV()">XUẤT BÁO CÁO (CSV)</button>
                 <button class="btn" style="background: #666;" onclick="changeClass()">ĐỔI TÊN LỚP</button>
             </div>
 
             <div id="re-panel" style="display:none">
-                <input type="text" id="nameInput" placeholder="Nhập tên bạn ơi...">
-                <button class="btn" onclick="registerFace()">CHỤP ẢNH</button>
-                <button class="btn btn-red" onclick="clearData()">XÓA HẾT</button>
+                <input type="text" id="nameInput" placeholder="Nhập tên học sinh..." autocomplete="off">
+                <button class="btn" onclick="registerFace()">CHỤP ẢNH ĐĂNG KÝ</button>
+                <button class="btn btn-red" onclick="clearData()">XÓA TẤT CẢ DỮ LIỆU</button>
             </div>
         </div>
 
         <div class="card">
             <div class="stats-grid">
                 <div class="stat-box"><span>Sĩ số</span><div id="total-students">0</div></div>
-                <div class="stat-box"><span>Có mặt</span><div id="present-students">0</div></div>
+                <div class="stat-box"><span>Hiện diện</span><div id="present-students">0</div></div>
                 <div class="stat-box" style="border: 2px solid var(--red);"><span>Vắng</span><div id="absent-students" style="color:var(--red);">0</div></div>
             </div>
-            <div class="absent-list-title">DANH SÁCH VẮNG:</div>
+            <div style="font-size: 0.8rem; font-weight: bold; color: var(--red); margin-bottom: 5px;">DANH SÁCH VẮNG:</div>
             <div id="absentNamesList" class="absent-names"></div>
-            <div id="logList" class="log-container"></div>
+            <div id="logList" style="max-height: 150px; overflow-y: auto; margin-top: 10px; border-top: 1px dashed #ccc;"></div>
         </div>
     </div>
 </div>
@@ -99,40 +92,52 @@
     const video = document.getElementById('video');
     const status = document.getElementById('status');
     const canvas = document.getElementById('overlay');
-    let labeledDescriptors = [], allStudentNames = [], logs = [["Tên Học Sinh", "Ngày", "Giờ"]], isProcessing = false;
+    let labeledDescriptors = [], allStudentNames = [], logs = [["Tên", "Ngày", "Giờ"]], isProcessing = false;
 
     async function init() {
         const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
         try {
-            await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL), faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL), faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)]);
-            checkClass(); await startCamera(); loadDataFromCloud();
-            status.innerText = "SẴN SÀNG"; startDetectionLoop();
+            status.innerText = "ĐANG TẢI AI...";
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+            ]);
+            checkClass(); 
+            await startCamera();
+            loadDataFromCloud();
+            status.innerText = "HỆ THỐNG SẴN SÀNG";
+            startDetectionLoop();
             setInterval(reportPresence, 15000);
-        } catch (e) { status.innerText = "LỖI!"; }
+        } catch (e) { status.innerText = "LỖI AI!"; }
     }
 
     function checkClass() {
         if (!localStorage.getItem('SavedClassName')) {
-            let className = prompt("Bạn ơi, lớp nào đây?", "Lớp 67");
+            let className = prompt("Bạn ơi, máy này dùng cho lớp nào?", "Lớp 67");
             localStorage.setItem('SavedClassName', className || "Lớp Ẩn Danh");
         }
     }
 
     async function startCamera() {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-        video.srcObject = stream;
+        if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            video.srcObject = stream;
+            return new Promise(resolve => video.onloadedmetadata = resolve);
+        } catch (err) { status.innerText = "LỖI CAM!"; }
     }
 
     function reportPresence() {
         const className = localStorage.getItem('SavedClassName') || "Lớp Ẩn Danh";
         const deviceID = "DEVICE_" + className.replace(/\s+/g, '_');
-        db.ref('DiemDanh/' + deviceID).set({
+        db.ref('diemdaily_status/' + deviceID).set({
             name: className.toUpperCase(),
             totalStudents: document.getElementById('total-students').innerText,
             presentStudents: document.getElementById('present-students').innerText,
             absentStudents: document.getElementById('absent-students').innerText,
             lastSeen: new Date().toLocaleTimeString('vi-VN')
-        }).then(() => db.ref('DiemDanh/' + deviceID).onDisconnect().remove());
+        }).then(() => db.ref('diemdaily_status/' + deviceID).onDisconnect().remove());
     }
 
     function startDetectionLoop() {
@@ -147,7 +152,9 @@
                     const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
                     resized.forEach(d => {
                         const best = matcher.findBestMatch(d.descriptor);
-                        if (best.label !== 'unknown') addLog(best.label);
+                        if (best.label !== 'unknown') {
+                            addLog(best.label);
+                        }
                         new faceapi.draw.DrawBox(d.detection.box, { label: best.label }).draw(canvas);
                     });
                 }
@@ -188,19 +195,45 @@
     }
 
     async function registerFace() {
-        const name = document.getElementById('nameInput').value.trim();
-        if (!name) return alert("Nhập tên bạn ơi!");
-        isProcessing = true; status.innerText = "ĐANG CHỤP...";
+        const nameInput = document.getElementById('nameInput');
+        const name = nameInput.value.trim();
+        
+        // TRƯỜNG HỢP: KHÔNG NHẬP TÊN -> RESTART CAM
+        if (!name) {
+            alert("Bạn ơi, phải nhập tên mới đăng ký được chứ!");
+            await startCamera(); 
+            return;
+        }
+
+        isProcessing = true;
+        status.innerText = "ĐANG CHỤP...";
         const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+        
         if (d) {
             await db.ref('school_data').once('value', s => {
                 const data = s.val() || [];
                 data.push({ label: name, descriptors: [Array.from(d.descriptor)] });
                 db.ref('school_data').set(data);
             });
-            alert("Đã xong!"); document.getElementById('nameInput').value = "";
+            alert("Đã lưu học sinh: " + name);
+            nameInput.value = "";
+        } else {
+            alert("Không thấy mặt! Huy thử lại nhé.");
         }
-        isProcessing = false; status.innerText = "SẴN SÀNG";
+
+        // TRƯỜNG HỢP: SAU KHI ĐĂNG KÝ XONG -> RESTART CAM
+        await startCamera();
+        isProcessing = false;
+        status.innerText = "HỆ THỐNG SẴN SÀNG";
+    }
+
+    async function clearData() {
+        if(confirm("Xóa hết dữ liệu học sinh không Huy?")) {
+            await db.ref('school_data').remove();
+            // TRƯỜNG HỢP: SAU KHI XÓA -> RESTART CAM
+            await startCamera();
+            location.reload();
+        }
     }
 
     function switchTab(m) {
@@ -210,12 +243,12 @@
         document.getElementById('tab-re').className = 'tab' + (m === 're' ? ' active' : '');
     }
     function changeClass() { localStorage.removeItem('SavedClassName'); location.reload(); }
-    function clearData() { if(confirm("Xóa hết không Huy?")) db.ref('school_data').remove(); }
     function exportCSV() {
         let csv = "\ufeff" + logs.map(row => row.join(",")).join("\n");
         const link = document.createElement("a");
         link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        link.download = `BaoCao.csv`; link.click();
+        link.download = `BaoCao_${localStorage.getItem('SavedClassName')}.csv`;
+        link.click();
     }
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN'); }, 1000);
     init();
