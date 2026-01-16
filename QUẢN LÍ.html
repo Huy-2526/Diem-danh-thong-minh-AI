@@ -33,13 +33,12 @@
         .stat-card h3 { margin: 0; font-size: 0.9rem; color: #666; text-transform: uppercase; }
         .stat-card div { font-size: 2rem; font-weight: 800; color: var(--navy); margin-top: 10px; }
 
-        /* Nút dọn dẹp máy ma */
         .btn-clear {
-            background: var(--red); color: white; border: none; padding: 10px 20px;
+            background: var(--red); color: white; border: none; padding: 12px 20px;
             border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 20px;
-            transition: 0.3s;
+            transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .btn-clear:hover { opacity: 0.8; transform: scale(1.05); }
+        .btn-clear:hover { opacity: 0.8; transform: scale(1.02); }
 
         .class-grid { 
             display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
@@ -48,7 +47,7 @@
         .class-card { 
             background: white; border-radius: 15px; padding: 20px; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            position: relative; transition: 0.3s;
+            position: relative; transition: 0.3s; border-left: 5px solid var(--navy);
         }
         .class-card:hover { transform: translateY(-5px); }
         .class-name { font-size: 1.3rem; font-weight: 800; color: var(--navy); margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -93,16 +92,20 @@
     </div>
 </div>
 
-// --- FIREBASE CONFIG ---
+<script>
+    // --- FIREBASE CONFIG ---
     const firebaseConfig = {
         apiKey: "AIzaSyCRlm5nRrp3DTXV-XJITup3xEHAc5re7oU",
         databaseURL: "https://diemdanhthcsbt-default-rtdb.asia-southeast1.firebasedatabase.app/",
         projectId: "diemdanhthcsbt",
     };
-    firebase.initializeApp(firebaseConfig);
+    
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     const db = firebase.database();
 
-    // 1. TỐI ƯU KẾT NỐI: Ưu tiên máy quản lý
+    // 1. TỐI ƯU KẾT NỐI
     const adminRef = db.ref('admin_status/QUAN_LY_CHINH');
     db.ref('.info/connected').on('value', (snap) => {
         if (snap.val() === true) {
@@ -111,8 +114,7 @@
         }
     });
 
-    // 2. LẮNG NGHE THẦN TỐC (Dùng .on 'value' để cập nhật realtime cực nhanh)
-    // Mình thêm hàm lọc bỏ dữ liệu rác để trang load nhẹ hơn
+    // 2. LẮNG NGHE DỮ LIỆU THẦN TỐC
     db.ref('diemdaily_status').on('value', (snapshot) => {
         const data = snapshot.val();
         const grid = document.getElementById('class-grid');
@@ -123,16 +125,14 @@
             return;
         }
 
-        // Dùng DocumentFragment để render nhanh hơn, không bị lag màn hình
         const fragment = document.createDocumentFragment();
         let totalPresent = 0, totalAbsent = 0, classCount = 0;
 
-        // Sắp xếp tên lớp theo thứ tự A-Z cho bạn dễ nhìn
         const sortedKeys = Object.keys(data).sort();
 
         sortedKeys.forEach(key => {
             const classInfo = data[key];
-            if (!classInfo.name) return; // Bỏ qua nếu dữ liệu trống
+            if (!classInfo.name) return;
 
             classCount++;
             totalPresent += parseInt(classInfo.presentStudents || 0);
@@ -153,8 +153,8 @@
             fragment.appendChild(card);
         });
 
-        grid.innerHTML = ''; // Xóa cũ
-        grid.appendChild(fragment); // Dán mới một lần duy nhất (giúp máy không bị chậm)
+        grid.innerHTML = '';
+        grid.appendChild(fragment);
         updateSummary(classCount, totalPresent, totalAbsent);
     });
 
@@ -164,18 +164,19 @@
         document.getElementById('global-absent').innerText = absent;
     }
 
-    // 3. HÀM DỌN DẸP MẠNH BẠO (Xóa sạch để reset tốc độ)
+    // 3. HÀM DỌN DẸP
     async function clearGhostDevices() {
-        if(confirm("Bạn có muốn dọn dẹp các máy không?")) {
-            // Dùng set(null) để Firebase xóa ngay lập tức thay vì đợi xếp hàng
+        if(confirm("Bạn ơi, xác nhận dọn dẹp danh sách lớp để tăng tốc độ nhé?")) {
             await db.ref('diemdaily_status').set(null); 
-            location.reload(); 
+            // Sau khi xóa, Firebase sẽ tự cập nhật giao diện ngay lập tức nhờ hàm .on('value')
         }
     }
 
     setInterval(() => {
-        document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN');
+        const clockElem = document.getElementById('clock');
+        if(clockElem) clockElem.innerText = new Date().toLocaleTimeString('vi-VN');
     }, 1000);
 </script>
+
 </body>
 </html>
