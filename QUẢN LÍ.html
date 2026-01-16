@@ -5,90 +5,146 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản Lý Điểm Danh - THCS Bình Thạnh</title>
     
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
-        :root { --navy: #0c2461; --blue: #1e90ff; --red: #ff3b30; }
-        body { margin: 0; font-family: sans-serif; background: #f0f2f5; color: #333; }
+        :root { 
+            --navy: #0c2461; 
+            --blue: #1e90ff; 
+            --red: #ff3b30; 
+            --green: #2ecc71;
+        }
+
+        body { 
+            margin: 0; 
+            font-family: "Quicksand", sans-serif; 
+            background: #f0f2f5; 
+            color: #333; 
+        }
         
         header { 
-            background: white; padding: 15px 25px; 
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 4px solid var(--navy); box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: white; 
+            padding: 15px 25px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            border-bottom: 4px solid var(--navy); 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        .header-title { font-size: 1.2rem; font-weight: 800; color: var(--navy); }
+
+        .header-title { 
+            font-family: "Pacifico", cursive;
+            font-size: 1.8rem; 
+            color: var(--navy); 
+        }
 
         .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
         
+        /* Dashboard tổng quát */
         .dashboard-summary { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 15px; margin-bottom: 25px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; 
+            margin-bottom: 25px; 
         }
         .stat-card { 
-            background: white; padding: 20px; border-radius: 12px; 
-            text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-top: 4px solid var(--blue);
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            text-align: center; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-top: 5px solid var(--blue);
         }
-        .stat-card h3 { margin: 0; font-size: 0.9rem; color: #666; text-transform: uppercase; }
-        .stat-card div { font-size: 2rem; font-weight: 800; color: var(--navy); margin-top: 10px; }
+        .stat-card h3 { margin: 0; font-size: 0.85rem; color: #666; text-transform: uppercase; font-weight: 700; }
+        .stat-card div { font-size: 2.2rem; font-weight: 800; color: var(--navy); margin-top: 10px; }
 
         .btn-clear {
-            background: var(--red); color: white; border: none; padding: 12px 20px;
-            border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 20px;
-            transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-family: "Quicksand", sans-serif;
+            background: var(--red); 
+            color: white; 
+            border: none; 
+            padding: 14px 25px;
+            border-radius: 10px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            margin-bottom: 25px;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(255, 59, 48, 0.3);
+            width: 100%;
+            max-width: 350px;
         }
-        .btn-clear:hover { opacity: 0.8; transform: scale(1.02); }
+        .btn-clear:hover { opacity: 0.9; transform: translateY(-2px); }
+        .btn-clear:disabled { background: #ccc; cursor: not-allowed; }
 
+        /* Danh sách các lớp */
         .class-grid { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
             gap: 20px; 
         }
         .class-card { 
-            background: white; border-radius: 15px; padding: 20px; 
+            background: white; 
+            border-radius: 15px; 
+            padding: 20px; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            position: relative; transition: 0.3s; border-left: 5px solid var(--navy);
+            border-left: 6px solid var(--navy);
+            animation: fadeIn 0.5s ease-out forwards;
         }
-        .class-card:hover { transform: translateY(-5px); }
-        .class-name { font-size: 1.3rem; font-weight: 800; color: var(--navy); margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .class-name { 
+            font-size: 1.4rem; 
+            font-weight: 800; 
+            color: var(--navy); 
+            margin-bottom: 15px; 
+            border-bottom: 2px solid #eee; 
+            padding-bottom: 10px; 
+        }
         
-        .class-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
-        .class-info b { color: var(--navy); }
-        .status-online { color: #2ecc71; font-weight: bold; font-size: 0.8rem; }
+        .class-info { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 1rem; }
+        .class-info b { color: var(--navy); font-weight: 700; }
+        .status-online { color: var(--green); font-weight: 800; font-size: 0.8rem; letter-spacing: 1px; }
         
-        .absent-tag { color: var(--red); font-weight: bold; }
-        #clock { font-weight: bold; color: var(--navy); }
-        .empty-state { text-align: center; grid-column: 1 / -1; padding: 50px; color: #999; }
+        .absent-tag { color: var(--red); font-weight: 800; }
+        #clock { font-weight: 700; color: var(--navy); font-size: 1.1rem; }
+        .empty-state { text-align: center; grid-column: 1 / -1; padding: 60px; color: #999; font-weight: 600; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="header-title">TRUNG TÂM QUẢN LÝ ĐIỂM DANH</div>
+    <div class="header-title">Quản lý Điểm danh</div>
     <div id="clock">00:00:00</div>
 </header>
 
 <div class="container">
     <div class="dashboard-summary">
         <div class="stat-card">
-            <h3>Tổng số lớp Online</h3>
+            <h3>Lớp Đang Online</h3>
             <div id="total-classes">0</div>
         </div>
-        <div class="stat-card" style="border-top-color: #2ecc71;">
-            <h3>Tổng học sinh có mặt</h3>
+        <div class="stat-card" style="border-top-color: var(--green);">
+            <h3>Học Sinh Có Mặt</h3>
             <div id="global-present">0</div>
         </div>
         <div class="stat-card" style="border-top-color: var(--red);">
-            <h3>Tổng học sinh vắng</h3>
+            <h3>Học Sinh Vắng</h3>
             <div id="global-absent">0</div>
         </div>
     </div>
 
-    <button class="btn-clear" onclick="clearGhostDevices()">DỌN DẸP MÁY MA (LÀM MỚI DANH SÁCH)</button>
+    <center>
+        <button id="btnDọn" class="btn-clear" onclick="clearGhostDevices()">DỌN DẸP MÁY MA (RESET DANH SÁCH)</button>
+    </center>
 
-    <h2 style="color: var(--navy); margin-bottom: 20px;">Trạng thái chi tiết các lớp:</h2>
+    <h2 style="color: var(--navy); margin: 30px 0 20px 0; font-weight: 800;">Trạng thái chi tiết:</h2>
     <div id="class-grid" class="class-grid">
-        <div class="empty-state">Đang chờ các máy quét kết nối...</div>
+        <div class="empty-state">Bạn ơi, đang đợi máy quét kết nối nhé...</div>
     </div>
 </div>
 
@@ -100,21 +156,10 @@
         projectId: "diemdanhthcsbt",
     };
     
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. TỐI ƯU KẾT NỐI
-    const adminRef = db.ref('admin_status/QUAN_LY_CHINH');
-    db.ref('.info/connected').on('value', (snap) => {
-        if (snap.val() === true) {
-            adminRef.onDisconnect().remove();
-            adminRef.set({ status: "online", lastSeen: new Date().toLocaleTimeString() });
-        }
-    });
-
-    // 2. LẮNG NGHE DỮ LIỆU THẦN TỐC
+    // 1. Tối ưu Realtime: Lắng nghe và hiển thị tức thì
     db.ref('diemdaily_status').on('value', (snapshot) => {
         const data = snapshot.val();
         const grid = document.getElementById('class-grid');
@@ -125,9 +170,10 @@
             return;
         }
 
-        const fragment = document.createDocumentFragment();
         let totalPresent = 0, totalAbsent = 0, classCount = 0;
+        let htmlContent = '';
 
+        // Sắp xếp theo tên lớp (A-Z)
         const sortedKeys = Object.keys(data).sort();
 
         sortedKeys.forEach(key => {
@@ -138,23 +184,20 @@
             totalPresent += parseInt(classInfo.presentStudents || 0);
             totalAbsent += parseInt(classInfo.absentStudents || 0);
 
-            const card = document.createElement('div');
-            card.className = 'class-card';
-            card.innerHTML = `
-                <div class="class-name">Lớp: ${classInfo.name}</div>
-                <div class="class-info">Sĩ số: <b>${classInfo.totalStudents}</b></div>
-                <div class="class-info">Có mặt: <b style="color:#2ecc71">${classInfo.presentStudents}</b></div>
-                <div class="class-info">Vắng: <b class="absent-tag">${classInfo.absentStudents}</b></div>
-                <div style="margin-top:15px; font-size:0.75rem; color:#999; display:flex; justify-content:space-between;">
-                    <span>Cập nhật: ${classInfo.lastSeen}</span>
-                    <span class="status-online">● ONLINE</span>
-                </div>
-            `;
-            fragment.appendChild(card);
+            htmlContent += `
+                <div class="class-card">
+                    <div class="class-name">Lớp: ${classInfo.name}</div>
+                    <div class="class-info">Sĩ số: <b>${classInfo.totalStudents}</b></div>
+                    <div class="class-info">Có mặt: <b style="color:var(--green)">${classInfo.presentStudents}</b></div>
+                    <div class="class-info">Vắng: <b class="absent-tag">${classInfo.absentStudents}</b></div>
+                    <div style="margin-top:15px; font-size:0.75rem; color:#999; display:flex; justify-content:space-between; align-items:center;">
+                        <span>Cập nhật: ${classInfo.lastSeen}</span>
+                        <span class="status-online">● ONLINE</span>
+                    </div>
+                </div>`;
         });
 
-        grid.innerHTML = '';
-        grid.appendChild(fragment);
+        grid.innerHTML = htmlContent;
         updateSummary(classCount, totalPresent, totalAbsent);
     });
 
@@ -164,14 +207,35 @@
         document.getElementById('global-absent').innerText = absent;
     }
 
-    // 3. HÀM DỌN DẸP
+    // 2. Hàm dọn dẹp máy ma (Fix lỗi bấm 2 lần & Load chậm)
     async function clearGhostDevices() {
-        if(confirm("Bạn ơi, xác nhận dọn dẹp danh sách lớp để tăng tốc độ nhé?")) {
-            await db.ref('diemdaily_status').set(null); 
-            // Sau khi xóa, Firebase sẽ tự cập nhật giao diện ngay lập tức nhờ hàm .on('value')
+        const btn = document.getElementById('btnDọn');
+        if(!confirm("Bạn ơi, bạn có chắc muốn dọn dẹp danh sách để tăng tốc độ không?")) return;
+
+        btn.innerText = "ĐANG DỌN DẸP...";
+        btn.disabled = true;
+
+        try {
+            // Lệnh xóa đồng bộ, xóa sạch node rác
+            await db.ref('diemdaily_status').set(null);
+            
+            btn.innerText = "ĐÃ XONG!";
+            btn.style.background = "var(--green)";
+            
+            // Tự reset nút sau 1.5 giây mà không cần reload trang
+            setTimeout(() => {
+                btn.innerText = "DỌN DẸP MÁY MA (RESET DANH SÁCH)";
+                btn.style.background = "var(--red)";
+                btn.disabled = false;
+            }, 1500);
+
+        } catch (e) {
+            alert("Lỗi kết nối Firebase bạn ơi!");
+            btn.disabled = false;
         }
     }
 
+    // Đồng hồ thời gian thực
     setInterval(() => {
         const clockElem = document.getElementById('clock');
         if(clockElem) clockElem.innerText = new Date().toLocaleTimeString('vi-VN');
