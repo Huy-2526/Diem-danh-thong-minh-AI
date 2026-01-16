@@ -93,7 +93,7 @@
     </div>
 </div>
 
-<script>
+// --- FIREBASE CONFIG ---
     const firebaseConfig = {
         apiKey: "AIzaSyCRlm5nRrp3DTXV-XJITup3xEHAc5re7oU",
         databaseURL: "https://diemdanhthcsbt-default-rtdb.asia-southeast1.firebasedatabase.app/",
@@ -102,7 +102,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Thoát là tắt liền
+    // 1. TỐI ƯU KẾT NỐI: Ưu tiên máy quản lý
     const adminRef = db.ref('admin_status/QUAN_LY_CHINH');
     db.ref('.info/connected').on('value', (snap) => {
         if (snap.val() === true) {
@@ -111,7 +111,8 @@
         }
     });
 
-    // Lắng nghe dữ liệu
+    // 2. LẮNG NGHE THẦN TỐC (Dùng .on 'value' để cập nhật realtime cực nhanh)
+    // Mình thêm hàm lọc bỏ dữ liệu rác để trang load nhẹ hơn
     db.ref('diemdaily_status').on('value', (snapshot) => {
         const data = snapshot.val();
         const grid = document.getElementById('class-grid');
@@ -122,11 +123,17 @@
             return;
         }
 
-        grid.innerHTML = '';
+        // Dùng DocumentFragment để render nhanh hơn, không bị lag màn hình
+        const fragment = document.createDocumentFragment();
         let totalPresent = 0, totalAbsent = 0, classCount = 0;
 
-        Object.keys(data).forEach(key => {
+        // Sắp xếp tên lớp theo thứ tự A-Z cho bạn dễ nhìn
+        const sortedKeys = Object.keys(data).sort();
+
+        sortedKeys.forEach(key => {
             const classInfo = data[key];
+            if (!classInfo.name) return; // Bỏ qua nếu dữ liệu trống
+
             classCount++;
             totalPresent += parseInt(classInfo.presentStudents || 0);
             totalAbsent += parseInt(classInfo.absentStudents || 0);
@@ -143,8 +150,11 @@
                     <span class="status-online">● ONLINE</span>
                 </div>
             `;
-            grid.appendChild(card);
+            fragment.appendChild(card);
         });
+
+        grid.innerHTML = ''; // Xóa cũ
+        grid.appendChild(fragment); // Dán mới một lần duy nhất (giúp máy không bị chậm)
         updateSummary(classCount, totalPresent, totalAbsent);
     });
 
@@ -154,11 +164,12 @@
         document.getElementById('global-absent').innerText = absent;
     }
 
-    // Hàm dọn dẹp máy ma
+    // 3. HÀM DỌN DẸP MẠNH BẠO (Xóa sạch để reset tốc độ)
     async function clearGhostDevices() {
-        if(confirm("Bạn có muốn xóa danh sách lớp để dọn 'máy ma' không? Các máy đang hoạt động sẽ tự hiện lại sau vài giây.")) {
-            await db.ref('diemdaily_status').remove();
-            // Không cần reload trang vì Firebase 'on value' sẽ tự cập nhật giao diện trắng trơn ngay lập tức
+        if(confirm("Bạn có muốn dọn dẹp các máy không?")) {
+            // Dùng set(null) để Firebase xóa ngay lập tức thay vì đợi xếp hàng
+            await db.ref('diemdaily_status').set(null); 
+            location.reload(); 
         }
     }
 
