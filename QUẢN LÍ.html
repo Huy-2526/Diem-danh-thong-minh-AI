@@ -21,7 +21,6 @@
 
         .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
         
-        /* Dashboard tổng quát */
         .dashboard-summary { 
             display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
             gap: 15px; margin-bottom: 25px; 
@@ -34,7 +33,14 @@
         .stat-card h3 { margin: 0; font-size: 0.9rem; color: #666; text-transform: uppercase; }
         .stat-card div { font-size: 2rem; font-weight: 800; color: var(--navy); margin-top: 10px; }
 
-        /* Danh sách các lớp */
+        /* Nút dọn dẹp máy ma */
+        .btn-clear {
+            background: var(--red); color: white; border: none; padding: 10px 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 20px;
+            transition: 0.3s;
+        }
+        .btn-clear:hover { opacity: 0.8; transform: scale(1.05); }
+
         .class-grid { 
             display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
             gap: 20px; 
@@ -52,7 +58,6 @@
         .status-online { color: #2ecc71; font-weight: bold; font-size: 0.8rem; }
         
         .absent-tag { color: var(--red); font-weight: bold; }
-        
         #clock { font-weight: bold; color: var(--navy); }
         .empty-state { text-align: center; grid-column: 1 / -1; padding: 50px; color: #999; }
     </style>
@@ -80,6 +85,8 @@
         </div>
     </div>
 
+    <button class="btn-clear" onclick="clearGhostDevices()">DỌN DẸP MÁY MA (LÀM MỚI DANH SÁCH)</button>
+
     <h2 style="color: var(--navy); margin-bottom: 20px;">Trạng thái chi tiết các lớp:</h2>
     <div id="class-grid" class="class-grid">
         <div class="empty-state">Đang chờ các máy quét kết nối...</div>
@@ -87,7 +94,6 @@
 </div>
 
 <script>
-    // --- FIREBASE CONFIG ---
     const firebaseConfig = {
         apiKey: "AIzaSyCRlm5nRrp3DTXV-XJITup3xEHAc5re7oU",
         databaseURL: "https://diemdanhthcsbt-default-rtdb.asia-southeast1.firebasedatabase.app/",
@@ -96,17 +102,16 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- TÍNH NĂNG: THOÁT LÀ TẮT LIỀN ---
+    // Thoát là tắt liền
     const adminRef = db.ref('admin_status/QUAN_LY_CHINH');
     db.ref('.info/connected').on('value', (snap) => {
         if (snap.val() === true) {
-            // Khi bạn đóng tab, Firebase sẽ tự xóa node này
             adminRef.onDisconnect().remove();
             adminRef.set({ status: "online", lastSeen: new Date().toLocaleTimeString() });
         }
     });
 
-    // --- CẬP NHẬT DỮ LIỆU TỪ CÁC LỚP ---
+    // Lắng nghe dữ liệu
     db.ref('diemdaily_status').on('value', (snapshot) => {
         const data = snapshot.val();
         const grid = document.getElementById('class-grid');
@@ -118,9 +123,7 @@
         }
 
         grid.innerHTML = '';
-        let totalPresent = 0;
-        let totalAbsent = 0;
-        let classCount = 0;
+        let totalPresent = 0, totalAbsent = 0, classCount = 0;
 
         Object.keys(data).forEach(key => {
             const classInfo = data[key];
@@ -142,7 +145,6 @@
             `;
             grid.appendChild(card);
         });
-
         updateSummary(classCount, totalPresent, totalAbsent);
     });
 
@@ -152,11 +154,17 @@
         document.getElementById('global-absent').innerText = absent;
     }
 
-    // Đồng hồ
+    // Hàm dọn dẹp máy ma
+    async function clearGhostDevices() {
+        if(confirm("Bạn có muốn xóa danh sách lớp để dọn 'máy ma' không? Các máy đang hoạt động sẽ tự hiện lại sau vài giây.")) {
+            await db.ref('diemdaily_status').remove();
+            // Không cần reload trang vì Firebase 'on value' sẽ tự cập nhật giao diện trắng trơn ngay lập tức
+        }
+    }
+
     setInterval(() => {
         document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN');
     }, 1000);
 </script>
-
 </body>
 </html>
