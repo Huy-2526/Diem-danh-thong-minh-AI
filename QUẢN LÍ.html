@@ -108,8 +108,21 @@
         
         .class-info { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 1rem; }
         .class-info b { color: var(--navy); font-weight: 700; }
-        .status-online { color: var(--green); font-weight: 800; font-size: 0.8rem; letter-spacing: 1px; }
         
+        /* CSS cho danh sách tên vắng */
+        .absent-list-container {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff5f5;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--red);
+            border: 1px dashed var(--red);
+        }
+        .absent-title { font-weight: 800; margin-bottom: 5px; text-transform: uppercase; font-size: 0.75rem; }
+        .absent-names { line-height: 1.4; }
+
+        .status-online { color: var(--green); font-weight: 800; font-size: 0.8rem; letter-spacing: 1px; }
         .absent-tag { color: var(--red); font-weight: 800; }
         #clock { font-weight: 700; color: var(--navy); font-size: 1.1rem; }
         .empty-state { text-align: center; grid-column: 1 / -1; padding: 60px; color: #999; font-weight: 600; }
@@ -149,7 +162,6 @@
 </div>
 
 <script>
-    // --- FIREBASE CONFIG ---
     const firebaseConfig = {
         apiKey: "AIzaSyCRlm5nRrp3DTXV-XJITup3xEHAc5re7oU",
         databaseURL: "https://diemdanhthcsbt-default-rtdb.asia-southeast1.firebasedatabase.app/",
@@ -159,7 +171,6 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. Tối ưu Realtime: Lắng nghe và hiển thị tức thì
     db.ref('diemdaily_status').on('value', (snapshot) => {
         const data = snapshot.val();
         const grid = document.getElementById('class-grid');
@@ -173,7 +184,6 @@
         let totalPresent = 0, totalAbsent = 0, classCount = 0;
         let htmlContent = '';
 
-        // Sắp xếp theo tên lớp (A-Z)
         const sortedKeys = Object.keys(data).sort();
 
         sortedKeys.forEach(key => {
@@ -184,12 +194,21 @@
             totalPresent += parseInt(classInfo.presentStudents || 0);
             totalAbsent += parseInt(classInfo.absentStudents || 0);
 
+            // Lấy danh sách tên vắng (nếu có)
+            const vắngNames = classInfo.absentList || "Đang cập nhật...";
+
             htmlContent += `
                 <div class="class-card">
                     <div class="class-name">Lớp: ${classInfo.name}</div>
                     <div class="class-info">Sĩ số: <b>${classInfo.totalStudents}</b></div>
                     <div class="class-info">Có mặt: <b style="color:var(--green)">${classInfo.presentStudents}</b></div>
                     <div class="class-info">Vắng: <b class="absent-tag">${classInfo.absentStudents}</b></div>
+                    
+                    <div class="absent-list-container">
+                        <div class="absent-title">Danh sách vắng:</div>
+                        <div class="absent-names">${vắngNames}</div>
+                    </div>
+
                     <div style="margin-top:15px; font-size:0.75rem; color:#999; display:flex; justify-content:space-between; align-items:center;">
                         <span>Cập nhật: ${classInfo.lastSeen}</span>
                         <span class="status-online">● ONLINE</span>
@@ -207,7 +226,6 @@
         document.getElementById('global-absent').innerText = absent;
     }
 
-    // 2. Hàm dọn dẹp máy ma (Fix lỗi bấm 2 lần & Load chậm)
     async function clearGhostDevices() {
         const btn = document.getElementById('btnDọn');
         if(!confirm("Bạn ơi, bạn có chắc muốn dọn dẹp danh sách để tăng tốc độ không?")) return;
@@ -216,26 +234,21 @@
         btn.disabled = true;
 
         try {
-            // Lệnh xóa đồng bộ, xóa sạch node rác
             await db.ref('diemdaily_status').set(null);
-            
             btn.innerText = "ĐÃ XONG!";
             btn.style.background = "var(--green)";
             
-            // Tự reset nút sau 1.5 giây mà không cần reload trang
             setTimeout(() => {
                 btn.innerText = "DỌN DẸP MÁY MA (RESET DANH SÁCH)";
                 btn.style.background = "var(--red)";
                 btn.disabled = false;
             }, 1500);
-
         } catch (e) {
             alert("Lỗi kết nối Firebase bạn ơi!");
             btn.disabled = false;
         }
     }
 
-    // Đồng hồ thời gian thực
     setInterval(() => {
         const clockElem = document.getElementById('clock');
         if(clockElem) clockElem.innerText = new Date().toLocaleTimeString('vi-VN');
