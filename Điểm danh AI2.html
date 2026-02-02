@@ -10,7 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
-        /* CSS Huyền thoại của bạn */
+        /* CSS Huyền thoại của Huy - GIỮ NGUYÊN HOÀN TOÀN */
         :root { --navy: #0c2461; --green: #00ff00; --red: #ff3b30; --blue-school: #1e90ff; }
         body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; touch-action: manipulation; }
         header { background: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--navy); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -48,7 +48,7 @@
         .stat-box span { display: block; font-size: 0.7rem; font-weight: 700; color: #666; text-transform: uppercase; }
         .stat-box div { font-size: 1.2rem; font-weight: 800; color: var(--navy); }
 
-        .log-container { max-height: 200px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #eee; }
+        .log-container { max-height: 150px; overflow-y: auto; margin-top: 5px; border-top: 1px solid #eee; }
         .log-item { padding: 8px 0; border-bottom: 1px solid #f9f9f9; display: flex; justify-content: space-between; font-size: 0.85rem; }
         #clock { font-weight: bold; font-size: 0.8rem; }
     </style>
@@ -57,8 +57,8 @@
 
 <header>
     <div class="header-left">
-        <img src="ảnh logo trường.png" alt="Logo">
-        <div class="brand">THCS BÌNH THẠNH - v6.5 (Firebase)</div>
+        <img src="https://via.placeholder.com/40" alt="Logo">
+        <div class="brand">ĐANG TẢI...</div>
     </div>
     <div id="clock">00:00:00</div>
 </header>
@@ -96,8 +96,12 @@
                 <div class="stat-box"><span>Hiện diện</span><div id="present-students">0</div></div>
                 <div class="stat-box"><span>Vắng</span><div id="absent-students" style="color:var(--red)">0</div></div>
             </div>
-            <div style="font-weight: 800; color: var(--navy); font-size: 0.85rem;">NHẬT KÝ HÔM NAY</div>
+            
+            <div style="font-weight: 800; color: var(--navy); font-size: 0.85rem;">MỚI ĐIỂM DANH</div>
             <div id="logList" class="log-container"></div>
+
+            <div style="font-weight: 800; color: var(--red); font-size: 0.85rem; margin-top: 15px;">DANH SÁCH VẮNG</div>
+            <div id="absentList" class="log-container" style="color: var(--red); opacity: 0.8;"></div>
         </div>
     </div>
 </div>
@@ -117,23 +121,42 @@
     let labeledDescriptors = [], logs = [], isProcessing = false;
 
     async function init() {
+        // CẢI TIẾN 1: Hiện tên lớp ngay lập tức
+        const savedName = localStorage.getItem('SavedClassName');
+        if (savedName) {
+            document.querySelector('.brand').innerText = `THCS BÌNH THẠNH - ${savedName.toUpperCase()} - v6.5`;
+        } else {
+            let n = prompt("Bạn ơi, lớp này tên gì?", "");
+            if (n) {
+                localStorage.setItem('SavedClassName', n);
+                document.querySelector('.brand').innerText = `THCS BÌNH THẠNH - ${n.toUpperCase()} - v6.5`;
+            } else {
+                localStorage.setItem('SavedClassName', "An_Danh");
+            }
+        }
+
+        status.innerText = "ĐANG TẢI MODEL (VUI LÒNG ĐỢI)...";
+
         const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
         try {
             await Promise.all([
                 faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
                 faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+                startCamera()
             ]);
-            if (!localStorage.getItem('SavedClassName')) {
-                let n = prompt("Bạn ơi, lớp này tên gì?", "");
-                localStorage.setItem('SavedClassName', n || "An_Danh");
-            }
-            await startCamera();
+            
             loadFromCloud();
             startDetection();
+            
+            // CẢI TIẾN 2: Báo cáo ngay khi sẵn sàng
+            reportStatus();
             setInterval(reportStatus, 10000);
+            
             status.innerText = "HỆ THỐNG SẴN SÀNG";
-        } catch (e) { status.innerText = "LỖI KẾT NỐI!"; }
+        } catch (e) { 
+            status.innerText = "LỖI KẾT NỐI! KIỂM TRA MẠNG NHA."; 
+        }
     }
 
     async function startCamera() {
@@ -146,12 +169,7 @@
     async function registerFace() {
         const nameInput = document.getElementById('nameInput');
         const name = nameInput.value.trim();
-
-        if (!name) {
-            alert("Lỗi: Bạn chưa nhập tên kìa! Restart Cam ngay...");
-            await startCamera(); 
-            return;
-        }
+        if (!name) { alert("Lỗi: Bạn chưa nhập tên kìa!"); return; }
 
         isProcessing = true;
         status.innerText = "ĐANG CHỤP...";
@@ -165,11 +183,8 @@
             });
             alert("Đã lưu thành công cho bạn!");
             nameInput.value = "";
-        } else {
-            alert("Lỗi: Không thấy mặt bạn ơi! Restart Cam nha...");
-        }
+        } else { alert("Lỗi: Không thấy mặt bạn ơi!"); }
 
-        await startCamera();
         isProcessing = false;
         status.innerText = "HỆ THỐNG SẴN SÀNG";
     }
@@ -177,15 +192,13 @@
     async function clearData() {
         if(confirm("Xóa sạch dữ liệu không bạn ơi?")) {
             await db.ref('school_data').remove();
-            await startCamera();
             location.reload();
-        } else {
-            await startCamera();
         }
     }
 
     function loadFromCloud() {
-        db.ref('school_data').on('value', snapshot => {
+        // CẢI TIẾN 3: Dùng once để tải nhanh danh sách ban đầu
+        db.ref('school_data').once('value', snapshot => {
             const data = snapshot.val() || [];
             labeledDescriptors = data.map(d => new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc))));
             updateStats(data.map(i => i.label));
@@ -209,6 +222,7 @@
                     const list = document.getElementById('logList');
                     list.innerHTML = `<div class="log-item"><b>${best.label}</b> <span>${new Date().toLocaleTimeString('vi-VN')}</span></div>` + list.innerHTML;
                     updateStats();
+                    reportStatus(); // Gửi cập nhật lên Firebase ngay khi có học sinh mới
                 }
                 new faceapi.draw.DrawBox(d.detection.box, { label: best.label }).draw(canvas);
             });
@@ -217,21 +231,35 @@
 
     function updateStats(allNames) {
         if (allNames) window.currentTotalNames = allNames;
-        const total = window.currentTotalNames ? window.currentTotalNames.length : 0;
-        document.getElementById('total-students').innerText = total;
-        document.getElementById('present-students').innerText = logs.length;
-        document.getElementById('absent-students').innerText = total - logs.length;
+        const totalList = window.currentTotalNames || [];
+        const totalCount = totalList.length;
+        const presentCount = logs.length;
+        const absentCount = totalCount - presentCount;
+
+        document.getElementById('total-students').innerText = totalCount;
+        document.getElementById('present-students').innerText = presentCount;
+        document.getElementById('absent-students').innerText = absentCount;
+
+        const absentListDiv = document.getElementById('absentList');
+        const absentNames = totalList.filter(name => !logs.includes(name));
+        absentListDiv.innerHTML = absentNames.map(name => `<div class="log-item">${name} <span>Vắng</span></div>`).join('');
     }
 
     function reportStatus() {
         const className = localStorage.getItem('SavedClassName') || "An_Danh";
-        db.ref('diemdaily_status/DEVICE_' + className.replace(/\s+/g, '_')).set({
+        const deviceRef = db.ref('diemdaily_status/DEVICE_' + className.replace(/\s+/g, '_'));
+
+        deviceRef.set({
             name: className.toUpperCase(),
             totalStudents: document.getElementById('total-students').innerText,
             presentStudents: logs.length,
             absentStudents: document.getElementById('absent-students').innerText,
-            lastSeen: new Date().toLocaleTimeString('vi-VN')
+            lastSeen: new Date().toLocaleTimeString('vi-VN'),
+            status: "ONLINE"
         });
+
+        // Tắt tab là xóa lớp khỏi trang quản lý ngay
+        deviceRef.onDisconnect().remove(); 
     }
 
     function switchTab(m) {
@@ -240,7 +268,12 @@
         document.getElementById('tab-at').className = 'tab' + (m === 'at' ? ' active' : '');
         document.getElementById('tab-re').className = 'tab' + (m === 're' ? ' active' : '');
     }
-    function changeClass() { localStorage.removeItem('SavedClassName'); location.reload(); }
+
+    function changeClass() { 
+        localStorage.removeItem('SavedClassName'); 
+        location.reload(); 
+    }
+
     function exportCSV() {
         let csv = "\ufeffTên,Giờ\n" + logs.map(n => `${n},${new Date().toLocaleTimeString()}`).join("\n");
         const link = document.createElement("a");
@@ -248,7 +281,11 @@
         link.download = `DiemDanh_${localStorage.getItem('SavedClassName')}.csv`;
         link.click();
     }
-    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN'); }, 1000);
+
+    setInterval(() => { 
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN'); 
+    }, 1000);
+
     init();
 </script>
 </body>
