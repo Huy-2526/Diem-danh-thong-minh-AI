@@ -57,7 +57,7 @@
 
 <header>
     <div class="header-left">
-        <img src="https://via.placeholder.com/40" alt="Logo">
+        <img src="ảnh logo trường.png" alt="Logo">
         <div class="brand">ĐANG TẢI...</div>
     </div>
     <div id="clock">00:00:00</div>
@@ -86,7 +86,7 @@
             <div id="re-panel" style="display:none">
                 <input type="text" id="nameInput" placeholder="Nhập tên học sinh..." autocomplete="off">
                 <button class="btn" onclick="registerFace()">CHỤP ẢNH ĐĂNG KÝ</button>
-                <button class="btn btn-red" onclick="clearData()">XÓA TẤT CẢ DỮ LIỆU</button>
+                <button class="btn btn-red" onclick="clearData()">XÓA DỮ LIỆU LỚP NÀY</button>
             </div>
         </div>
 
@@ -120,8 +120,13 @@
     const canvas = document.getElementById('overlay');
     let labeledDescriptors = [], logs = [], isProcessing = false;
 
+    // Lấy ID lớp an toàn để làm thư mục lưu trữ
+    const getClassNode = () => {
+        const name = localStorage.getItem('SavedClassName') || "An_Danh";
+        return 'school_data/' + name.replace(/\s+/g, '_');
+    };
+
     async function init() {
-        // CẢI TIẾN 1: Hiện tên lớp ngay lập tức
         const savedName = localStorage.getItem('SavedClassName');
         if (savedName) {
             document.querySelector('.brand').innerText = `THCS BÌNH THẠNH - ${savedName.toUpperCase()} - v6.5`;
@@ -136,8 +141,8 @@
         }
 
         status.innerText = "ĐANG TẢI MODEL (VUI LÒNG ĐỢI)...";
-
         const MODEL_URL = 'https://fastly.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+        
         try {
             await Promise.all([
                 faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
@@ -148,11 +153,8 @@
             
             loadFromCloud();
             startDetection();
-            
-            // CẢI TIẾN 2: Báo cáo ngay khi sẵn sàng
             reportStatus();
             setInterval(reportStatus, 10000);
-            
             status.innerText = "HỆ THỐNG SẴN SÀNG";
         } catch (e) { 
             status.innerText = "LỖI KẾT NỐI! KIỂM TRA MẠNG NHA."; 
@@ -176,13 +178,15 @@
         const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
         
         if (d) {
-            await db.ref('school_data').once('value', s => {
+            const node = getClassNode();
+            await db.ref(node).once('value', s => {
                 const data = s.val() || [];
                 data.push({ label: name, descriptors: [Array.from(d.descriptor)] });
-                db.ref('school_data').set(data);
+                db.ref(node).set(data);
             });
-            alert("Đã lưu thành công cho bạn!");
+            alert(`Đã đăng ký ${name} vào lớp ${localStorage.getItem('SavedClassName')}`);
             nameInput.value = "";
+            loadFromCloud(); // Tải lại dữ liệu riêng của lớp ngay
         } else { alert("Lỗi: Không thấy mặt bạn ơi!"); }
 
         isProcessing = false;
@@ -190,15 +194,15 @@
     }
 
     async function clearData() {
-        if(confirm("Xóa sạch dữ liệu không bạn ơi?")) {
-            await db.ref('school_data').remove();
+        if(confirm(`Bạn ơi, xóa sạch dữ liệu của lớp ${localStorage.getItem('SavedClassName')} nhé?`)) {
+            await db.ref(getClassNode()).remove();
             location.reload();
         }
     }
 
     function loadFromCloud() {
-        // CẢI TIẾN 3: Dùng once để tải nhanh danh sách ban đầu
-        db.ref('school_data').once('value', snapshot => {
+        // CHỈ TẢI DỮ LIỆU CỦA LỚP HIỆN TẠI
+        db.ref(getClassNode()).once('value', snapshot => {
             const data = snapshot.val() || [];
             labeledDescriptors = data.map(d => new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc))));
             updateStats(data.map(i => i.label));
@@ -222,7 +226,7 @@
                     const list = document.getElementById('logList');
                     list.innerHTML = `<div class="log-item"><b>${best.label}</b> <span>${new Date().toLocaleTimeString('vi-VN')}</span></div>` + list.innerHTML;
                     updateStats();
-                    reportStatus(); // Gửi cập nhật lên Firebase ngay khi có học sinh mới
+                    reportStatus(); 
                 }
                 new faceapi.draw.DrawBox(d.detection.box, { label: best.label }).draw(canvas);
             });
@@ -243,6 +247,8 @@
         const absentListDiv = document.getElementById('absentList');
         const absentNames = totalList.filter(name => !logs.includes(name));
         absentListDiv.innerHTML = absentNames.map(name => `<div class="log-item">${name} <span>Vắng</span></div>`).join('');
+        
+        window.absentNamesString = absentNames.join(', ');
     }
 
     function reportStatus() {
@@ -254,11 +260,11 @@
             totalStudents: document.getElementById('total-students').innerText,
             presentStudents: logs.length,
             absentStudents: document.getElementById('absent-students').innerText,
+            absentList: window.absentNamesString || "Không có",
             lastSeen: new Date().toLocaleTimeString('vi-VN'),
             status: "ONLINE"
         });
 
-        // Tắt tab là xóa lớp khỏi trang quản lý ngay
         deviceRef.onDisconnect().remove(); 
     }
 
@@ -273,14 +279,30 @@
         localStorage.removeItem('SavedClassName'); 
         location.reload(); 
     }
+function exportCSV() {
+        // Tiêu đề cột
+        let csvContent = "\ufeffTên,Giờ Điểm Danh\n"; 
+        
+        // Duyệt qua danh sách đã điểm danh
+        logs.forEach(name => {
+            let time = new Date().toLocaleTimeString('vi-VN');
+            // Mỗi dòng gồm: Tên,Dấu phẩy,Giờ
+            csvContent += `${name},${time}\n`;
+        });
 
-    function exportCSV() {
-        let csv = "\ufeffTên,Giờ\n" + logs.map(n => `${n},${new Date().toLocaleTimeString()}`).join("\n");
+        // Tạo file và tải về
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        link.download = `DiemDanh_${localStorage.getItem('SavedClassName')}.csv`;
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", `DiemDanh_${localStorage.getItem('SavedClassName') || 'Lop'}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
         link.click();
-    }
+        document.body.removeChild(link);
+    } link.click();
 
     setInterval(() => { 
         document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN'); 
