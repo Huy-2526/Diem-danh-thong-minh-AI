@@ -120,7 +120,6 @@
     const canvas = document.getElementById('overlay');
     let labeledDescriptors = [], logs = [], isProcessing = false;
 
-    // Lấy ID lớp an toàn để làm thư mục lưu trữ
     const getClassNode = () => {
         const name = localStorage.getItem('SavedClassName') || "An_Danh";
         return 'school_data/' + name.replace(/\s+/g, '_');
@@ -184,9 +183,9 @@
                 data.push({ label: name, descriptors: [Array.from(d.descriptor)] });
                 db.ref(node).set(data);
             });
-            alert(`Đã đăng ký ${name} vào lớp ${localStorage.getItem('SavedClassName')}`);
+            alert(`Đã đăng ký ${name} thành công!`);
             nameInput.value = "";
-            loadFromCloud(); // Tải lại dữ liệu riêng của lớp ngay
+            loadFromCloud();
         } else { alert("Lỗi: Không thấy mặt bạn ơi!"); }
 
         isProcessing = false;
@@ -194,14 +193,13 @@
     }
 
     async function clearData() {
-        if(confirm(`Bạn ơi, xóa sạch dữ liệu của lớp ${localStorage.getItem('SavedClassName')} nhé?`)) {
+        if(confirm(`Xóa sạch dữ liệu lớp ${localStorage.getItem('SavedClassName')}?`)) {
             await db.ref(getClassNode()).remove();
             location.reload();
         }
     }
 
     function loadFromCloud() {
-        // CHỈ TẢI DỮ LIỆU CỦA LỚP HIỆN TẠI
         db.ref(getClassNode()).once('value', snapshot => {
             const data = snapshot.val() || [];
             labeledDescriptors = data.map(d => new faceapi.LabeledFaceDescriptors(d.label, d.descriptors.map(desc => new Float32Array(desc))));
@@ -247,14 +245,12 @@
         const absentListDiv = document.getElementById('absentList');
         const absentNames = totalList.filter(name => !logs.includes(name));
         absentListDiv.innerHTML = absentNames.map(name => `<div class="log-item">${name} <span>Vắng</span></div>`).join('');
-        
         window.absentNamesString = absentNames.join(', ');
     }
 
     function reportStatus() {
         const className = localStorage.getItem('SavedClassName') || "An_Danh";
         const deviceRef = db.ref('diemdaily_status/DEVICE_' + className.replace(/\s+/g, '_'));
-
         deviceRef.set({
             name: className.toUpperCase(),
             totalStudents: document.getElementById('total-students').innerText,
@@ -264,7 +260,6 @@
             lastSeen: new Date().toLocaleTimeString('vi-VN'),
             status: "ONLINE"
         });
-
         deviceRef.onDisconnect().remove(); 
     }
 
@@ -279,30 +274,19 @@
         localStorage.removeItem('SavedClassName'); 
         location.reload(); 
     }
-function exportCSV() {
-        // Tiêu đề cột
+
+    function exportCSV() {
         let csvContent = "\ufeffTên,Giờ Điểm Danh\n"; 
-        
-        // Duyệt qua danh sách đã điểm danh
         logs.forEach(name => {
             let time = new Date().toLocaleTimeString('vi-VN');
-            // Mỗi dòng gồm: Tên,Dấu phẩy,Giờ
             csvContent += `${name},${time}\n`;
         });
-
-        // Tạo file và tải về
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        
-        link.setAttribute("href", url);
-        link.setAttribute("download", `DiemDanh_${localStorage.getItem('SavedClassName') || 'Lop'}.csv`);
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
+        link.href = URL.createObjectURL(blob);
+        link.download = `DiemDanh_${localStorage.getItem('SavedClassName') || 'Lop'}.csv`;
         link.click();
-        document.body.removeChild(link);
-    } link.click();
+    }
 
     setInterval(() => { 
         document.getElementById('clock').innerText = new Date().toLocaleTimeString('vi-VN'); 
