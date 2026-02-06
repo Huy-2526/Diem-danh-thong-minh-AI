@@ -216,7 +216,7 @@
             const resized = faceapi.resizeResults(detections, displaySize);
             canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
             
-            const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
+            const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.67);
             resized.forEach(d => {
                 const best = matcher.findBestMatch(d.descriptor);
                 if (best.label !== 'unknown' && !logs.includes(best.label)) {
